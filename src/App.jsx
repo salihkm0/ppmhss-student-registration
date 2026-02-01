@@ -7,6 +7,7 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import StudentLookup from './pages/StudentLookup';
 import ProtectedRoute from './components/ProtectedRoute';
+import HallTicketPage from './pages/HallTicketPage'; 
 
 const theme = createTheme({
   palette: {
@@ -27,6 +28,7 @@ function App() {
         <Routes>
           <Route path="/" element={<RegistrationForm />} />
           <Route path="/success" element={<SuccessPage />} />
+          <Route path="/hallticket" element={<HallTicketPage />} /> 
           <Route path="/lookup" element={<StudentLookup />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route 
