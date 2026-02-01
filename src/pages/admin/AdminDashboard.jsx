@@ -108,7 +108,7 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await axios.get('http://localhost:5010/api/admin/dashboard/stats', {
+      const response = await axios.get('https://ppmhss-student-registration-backend.onrender.com/api/admin/dashboard/stats', {
         headers: { 'x-auth-token': token }
       });
       
@@ -161,7 +161,7 @@ const AdminDashboard = () => {
         ...(classFilter && { class: classFilter })
       };
 
-      const response = await axios.get('http://localhost:5010/api/admin/students', {
+      const response = await axios.get('https://ppmhss-student-registration-backend.onrender.com/api/admin/students', {
         headers: { 'x-auth-token': token },
         params
       });
@@ -214,7 +214,7 @@ const AdminDashboard = () => {
 
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await axios.delete(`http://localhost:5010/api/admin/students/${studentId}`, {
+      const response = await axios.delete(`https://ppmhss-student-registration-backend.onrender.com/api/admin/students/${studentId}`, {
         headers: { 'x-auth-token': token }
       });
       
@@ -232,7 +232,7 @@ const AdminDashboard = () => {
   const handleExport = async () => {
     try {
       const token = localStorage.getItem('adminToken');
-      const response = await axios.get('http://localhost:5010/api/admin/export', {
+      const response = await axios.get('https://ppmhss-student-registration-backend.onrender.com/api/admin/export', {
         headers: { 'x-auth-token': token },
         responseType: 'blob'
       });

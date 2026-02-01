@@ -39,7 +39,7 @@ const StudentLookup = () => {
     setStudent(null);
 
     try {
-      const response = await axios.post('http://localhost:5010/api/students/verify', {
+      const response = await axios.post('https://ppmhss-student-registration-backend.onrender.com/api/students/verify', {
         registrationCode: registrationCode.trim()
       });
       
