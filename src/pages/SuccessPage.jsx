@@ -12,6 +12,8 @@ import {
   Alert,
   IconButton,
   Snackbar,
+  Chip,
+  Divider,
 } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
@@ -22,6 +24,10 @@ import {
   School as SchoolIconFooter,
   Phone as PhoneIconFooter,
   Email as EmailIconFooter,
+  Room as RoomIcon,
+  EventSeat as SeatIcon,
+  Download as DownloadIcon,
+  Print as PrintIcon,
 } from '@mui/icons-material';
 import toast from 'react-hot-toast';
 
@@ -59,9 +65,31 @@ const SuccessPage = () => {
   };
 
   const handleWhatsApp = () => {
-    const message = `My Student Registration Details:\nApplication No: ${registrationData.applicationNo}\nRegistration Code: ${registrationData.registrationCode}\nName: ${registrationData.name}`;
+    const message = `My Student Registration Details:\n
+📝 Application No: ${registrationData.applicationNo}
+🔑 Registration Code: ${registrationData.registrationCode}
+👤 Name: ${registrationData.name}
+🚪 Room No: ${registrationData.roomNo}
+💺 Seat No: ${registrationData.seatNo}
+🏫 Class: ${registrationData.studyingClass}
+📞 Phone: ${registrationData.phoneNo}`;
+    
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
+  };
+
+  const handleDownloadHallTicket = () => {
+    window.open(
+      `http://localhost:5010/api/students/${registrationData.registrationCode}/hallticket/download`,
+      '_blank'
+    );
+  };
+
+  const handlePreviewHallTicket = () => {
+    window.open(
+      `http://localhost:5010/api/students/${registrationData.registrationCode}/hallticket/preview`,
+      '_blank'
+    );
   };
 
   if (!registrationData) {
@@ -69,7 +97,7 @@ const SuccessPage = () => {
   }
 
   return (
-    <Container maxWidth="sm" sx={{ py: 4 }}>
+    <Container maxWidth="md" sx={{ py: 4 }}>
       <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, borderRadius: 3 }}>
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <CheckCircleIcon sx={{ fontSize: 80, color: 'success.main', mb: 2 }} />
@@ -77,49 +105,63 @@ const SuccessPage = () => {
             Registration Successful!
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Your registration has been completed successfully.
+            Your registration has been completed successfully. Please save your registration details.
           </Typography>
         </Box>
 
-        <Alert severity="info" sx={{ mb: 3 }}>
-          Your registration details have been saved. Please save the information below for future reference.
+        <Alert severity="success" sx={{ mb: 3 }}>
+          <Typography variant="body2">
+            ✅ Your seat has been allocated. Please note your Room No for the examination.
+          </Typography>
         </Alert>
 
         <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12}>
             <Card variant="outlined">
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                   <AssignmentIcon sx={{ mr: 1, color: 'primary.main' }} />
                   <Typography variant="h6" color="primary">
                     Registration Details
                   </Typography>
                 </Box>
                 
-                <Box sx={{ mb: 3 }}>
+                {/* Student Name */}
+                <Box sx={{ mb: 3, textAlign: 'center' }}>
                   <Typography variant="body2" color="textSecondary">
                     Candidate Name
                   </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                  <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                     {registrationData.name}
                   </Typography>
                 </Box>
-                
-                <Grid container spacing={2}>
+
+                <Divider sx={{ my: 2 }} />
+
+                {/* Registration Codes */}
+                <Grid container spacing={2} sx={{ mb: 3 }}>
                   <Grid item xs={12} md={6}>
                     <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="textSecondary">
+                      <Typography variant="body2" color="textSecondary" gutterBottom>
                         Application Number
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body1" sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}>
+                        <Typography variant="body1" sx={{ 
+                          fontWeight: 'bold', 
+                          fontFamily: 'monospace',
+                          backgroundColor: '#f5f5f5',
+                          padding: '8px 12px',
+                          borderRadius: 1,
+                          flex: 1
+                        }}>
                           {registrationData.applicationNo}
                         </Typography>
                         <IconButton 
                           size="small" 
                           onClick={() => handleCopy(registrationData.applicationNo)}
+                          color="primary"
                         >
-                          <ContentCopyIcon fontSize="small" />
+                          <ContentCopyIcon />
                         </IconButton>
                       </Box>
                     </Box>
@@ -127,25 +169,33 @@ const SuccessPage = () => {
                   
                   <Grid item xs={12} md={6}>
                     <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="textSecondary">
+                      <Typography variant="body2" color="textSecondary" gutterBottom>
                         Registration Code
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography variant="body1" sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}>
+                        <Typography variant="body1" sx={{ 
+                          fontWeight: 'bold', 
+                          fontFamily: 'monospace',
+                          backgroundColor: '#f5f5f5',
+                          padding: '8px 12px',
+                          borderRadius: 1,
+                          flex: 1
+                        }}>
                           {registrationData.registrationCode}
                         </Typography>
                         <IconButton 
                           size="small" 
                           onClick={() => handleCopy(registrationData.registrationCode)}
+                          color="primary"
                         >
-                          <ContentCopyIcon fontSize="small" />
+                          <ContentCopyIcon />
                         </IconButton>
                       </Box>
                     </Box>
                   </Grid>
                 </Grid>
-                
-                <Box sx={{ mt: 2 }}>
+
+                <Box sx={{ mt: 3, pt: 2, borderTop: 1, borderColor: 'divider' }}>
                   <Typography variant="body2" color="textSecondary">
                     Registration Date
                   </Typography>
@@ -164,17 +214,39 @@ const SuccessPage = () => {
           </Grid>
         </Grid>
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Button
-            variant="contained"
-            color="success"
-            startIcon={<WhatsAppIcon />}
-            onClick={handleWhatsApp}
-            fullWidth
-            size="large"
-          >
-            Share via WhatsApp
-          </Button>
+        {/* Action Buttons */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4 }}>
+          <Typography variant="h6" color="primary" gutterBottom align="center">
+            Hall Ticket & Actions
+          </Typography>
+          
+          <Grid container spacing={2}>            
+            <Grid item xs={12} md={6}>
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={<DownloadIcon />}
+                onClick={handleDownloadHallTicket}
+                fullWidth
+                size="large"
+              >
+                Download Hall Ticket
+              </Button>
+            </Grid>
+            
+            <Grid item xs={12} md={6}>
+              <Button
+                variant="contained"
+                color="info"
+                startIcon={<WhatsAppIcon />}
+                onClick={handleWhatsApp}
+                fullWidth
+                size="large"
+              >
+                Share via WhatsApp
+              </Button>
+            </Grid>
+          </Grid>
           
           <Button
             variant="outlined"
@@ -182,14 +254,28 @@ const SuccessPage = () => {
             onClick={() => navigate('/')}
             fullWidth
             size="large"
+            sx={{ mt: 2 }}
           >
             Back to Home
           </Button>
         </Box>
 
+        {/* Important Instructions */}
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          <Typography variant="body2">
+            <strong>Important Instructions:</strong>
+            <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
+              <li>Save your Registration Code: <strong>{registrationData.registrationCode}</strong></li>
+              <li>You must report to <strong>Room {registrationData.roomNo}</strong> at <strong>Seat {registrationData.seatNo}</strong></li>
+              <li>Bring original Aadhaar card and this hall ticket</li>
+              <li>Report 30 minutes before exam time (09:30 AM)</li>
+            </ul>
+          </Typography>
+        </Alert>
+
         <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: 'divider' }}>
           <Typography variant="body2" color="text.secondary" align="center">
-            <strong>Important:</strong> Please save your Registration Code. You'll need it for future references.
+            <strong>Need help?</strong> Contact school office or visit the registration portal.
           </Typography>
         </Box>
       </Paper>

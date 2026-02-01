@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Container,
   Paper,
@@ -11,45 +11,54 @@ import {
   Grid,
   Alert,
   CircularProgress,
-} from '@mui/material';
+  Chip,
+} from "@mui/material";
 import {
   Search as SearchIcon,
   Assignment as AssignmentIcon,
   Person as PersonIcon,
   School as SchoolIcon,
   Phone as PhoneIcon,
-} from '@mui/icons-material';
-import axios from 'axios';
-import toast from 'react-hot-toast';
+  Room as RoomIcon,
+  EventSeat as SeatIcon,
+  Visibility as VisibilityIcon,
+  Download as DownloadIcon,
+} from "@mui/icons-material";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 const StudentLookup = () => {
-  const [registrationCode, setRegistrationCode] = useState('');
+  const [registrationCode, setRegistrationCode] = useState("");
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSearch = async () => {
     if (!registrationCode.trim()) {
-      toast.error('Please enter a registration code');
+      toast.error("Please enter a registration code");
       return;
     }
 
     setLoading(true);
-    setError('');
+    setError("");
     setStudent(null);
 
     try {
-      const response = await axios.post('https://ppmhss-student-registration-backend.onrender.com/api/students/verify', {
-        registrationCode: registrationCode.trim()
-      });
-      
+      const response = await axios.post(
+        "http://localhost:5010/api/students/verify",
+        {
+          registrationCode: registrationCode.trim().toUpperCase(),
+        },
+      );
+
       if (response.data.success) {
         setStudent(response.data.data);
-        toast.success('Registration found!');
+        toast.success("Registration found!");
       }
     } catch (error) {
-      console.error('Search error:', error);
-      const errorMessage = error.response?.data?.message || 'Invalid registration code';
+      console.error("Search error:", error);
+      const errorMessage =
+        error.response?.data?.message || "Invalid registration code";
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -58,21 +67,29 @@ const StudentLookup = () => {
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSearch();
     }
+  };
+
+  // Function to get room status chip color
+  const getRoomStatusColor = (roomNo, seatNo) => {
+    if (roomNo && seatNo) {
+      return "success";
+    }
+    return "default";
   };
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, borderRadius: 3 }}>
-        <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <AssignmentIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+        <Box sx={{ textAlign: "center", mb: 4 }}>
+          <AssignmentIcon sx={{ fontSize: 60, color: "primary.main", mb: 2 }} />
           <Typography variant="h4" component="h1" gutterBottom>
             Check Registration Status
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Enter your registration code to view your application details
+            Enter your registration code to view your application details and download hall ticket
           </Typography>
         </Box>
 
@@ -83,12 +100,14 @@ const StudentLookup = () => {
             value={registrationCode}
             onChange={(e) => setRegistrationCode(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Enter your registration code (e.g., REG123456)"
+            placeholder="Enter your registration code (e.g., PPM1001)"
             InputProps={{
-              startAdornment: <SearchIcon sx={{ mr: 1, color: 'action.active' }} />,
+              startAdornment: (
+                <SearchIcon sx={{ mr: 1, color: "action.active" }} />
+              ),
             }}
           />
-          
+
           <Button
             variant="contained"
             fullWidth
@@ -97,7 +116,7 @@ const StudentLookup = () => {
             disabled={loading}
             sx={{ mt: 2 }}
           >
-            {loading ? <CircularProgress size={24} /> : 'Search Registration'}
+            {loading ? <CircularProgress size={24} /> : "Search Registration"}
           </Button>
         </Box>
 
@@ -113,11 +132,11 @@ const StudentLookup = () => {
               <Typography variant="h6" gutterBottom color="primary">
                 Registration Details
               </Typography>
-              
+
               <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <PersonIcon sx={{ mr: 1, color: 'action.active' }} />
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                    <PersonIcon sx={{ mr: 1, color: "action.active" }} />
                     <Box>
                       <Typography variant="body2" color="textSecondary">
                         Candidate Name
@@ -130,13 +149,17 @@ const StudentLookup = () => {
                 </Grid>
                 
                 <Grid item xs={12} md={6}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <AssignmentIcon sx={{ mr: 1, color: 'action.active' }} />
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                    <AssignmentIcon sx={{ mr: 1, color: "action.active" }} />
                     <Box>
                       <Typography variant="body2" color="textSecondary">
                         Registration Code
                       </Typography>
-                      <Typography variant="body1" fontWeight="bold" fontFamily="monospace">
+                      <Typography
+                        variant="body1"
+                        fontWeight="bold"
+                        fontFamily="monospace"
+                      >
                         {student.registrationCode}
                       </Typography>
                     </Box>
@@ -159,22 +182,46 @@ const StudentLookup = () => {
                     <Typography variant="body2" color="textSecondary">
                       Status
                     </Typography>
-                    <Typography 
-                      variant="body1" 
+                    <Typography
+                      variant="body1"
                       fontWeight="bold"
-                      color={
-                        student.status === 'Approved' ? 'success.main' :
-                        student.status === 'Rejected' ? 'error.main' : 'warning.main'
-                      }
+                      color="success.main"
                     >
-                      {student.status}
+                      Registered
                     </Typography>
                   </Box>
                 </Grid>
                 
+                {/* Room and Seat Information */}
                 <Grid item xs={12} md={6}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <SchoolIcon sx={{ mr: 1, color: 'action.active' }} />
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                    <RoomIcon sx={{ mr: 1, color: "action.active" }} />
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">
+                        Room No
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold">
+                        {student.roomNo}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+                
+                {/* <Grid item xs={12}>
+                  <Box sx={{ mb: 2 }}>
+                    <Chip
+                      icon={<RoomIcon />}
+                      label={`Room: ${student.roomNo}, Seat: ${student.seatNo}`}
+                      color={getRoomStatusColor(student.roomNo, student.seatNo)}
+                      variant="outlined"
+                      sx={{ fontWeight: "bold" }}
+                    />
+                  </Box>
+                </Grid> */}
+                
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                    <SchoolIcon sx={{ mr: 1, color: "action.active" }} />
                     <Box>
                       <Typography variant="body2" color="textSecondary">
                         School & Class
@@ -187,47 +234,114 @@ const StudentLookup = () => {
                 </Grid>
                 
                 <Grid item xs={12} md={6}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <PhoneIcon sx={{ mr: 1, color: 'action.active' }} />
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                    <PhoneIcon sx={{ mr: 1, color: "action.active" }} />
                     <Box>
                       <Typography variant="body2" color="textSecondary">
                         Phone Number
                       </Typography>
-                      <Typography variant="body1">
-                        {student.phoneNo}
-                      </Typography>
+                      <Typography variant="body1">{student.phoneNo}</Typography>
                     </Box>
                   </Box>
                 </Grid>
                 
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="textSecondary">
+                      Medium
+                    </Typography>
+                    <Typography variant="body1">{student.medium}</Typography>
+                  </Box>
+                </Grid>
+
                 <Grid item xs={12}>
-                  <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="textSecondary">
+                      Exam Center
+                    </Typography>
+                    <Typography variant="body1">PPMHSS Kottukkara</Typography>
+                  </Box>
+                </Grid>
+                
+                <Grid item xs={12}>
+                  <Box
+                    sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: "divider" }}
+                  >
                     <Typography variant="body2" color="textSecondary">
                       Registration Date
                     </Typography>
                     <Typography variant="body1">
-                      {new Date(student.createdAt).toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
+                      {new Date(student.createdAt).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })}
                     </Typography>
                   </Box>
                 </Grid>
+                
+                {/* Hall Ticket Download Buttons */}
+                <Grid item xs={12}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      gap: 2,
+                      mt: 3,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    {/* <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<VisibilityIcon />}
+                      onClick={() =>
+                        window.open(
+                          `http://localhost:5010/api/students/${student.registrationCode}/hallticket/preview`,
+                          "_blank",
+                        )
+                      }
+                      size="large"
+                    >
+                      Preview Hall Ticket
+                    </Button> */}
+                    <Button
+                      variant="contained"
+                      color="success"
+                      startIcon={<DownloadIcon />}
+                      onClick={() =>
+                        window.open(
+                          `http://localhost:5010/api/students/${student.registrationCode}/hallticket/download`,
+                          "_blank",
+                        )
+                      }
+                      size="large"
+                    >
+                      Download & Print
+                    </Button>
+                  </Box>
+                </Grid>
+                
+                {/* Important Note */}
+                {/* <Grid item xs={12}>
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    <Typography variant="body2">
+                      <strong>Important:</strong> Please note your Room No ({student.roomNo}) and Seat No ({student.seatNo}). 
+                      You must report to Room {student.roomNo} at seat {student.seatNo} for the examination.
+                    </Typography>
+                  </Alert>
+                </Grid> */}
               </Grid>
             </CardContent>
           </Card>
         )}
 
-        <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: 'divider' }}>
+        <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: "divider" }}>
           <Typography variant="body2" color="text.secondary" align="center">
-            Don't have a registration code?{' '}
-            <Button 
-              variant="text" 
-              size="small" 
-              href="/"
-              color="primary"
-            >
+            Don't have a registration code?{" "}
+            <Button variant="text" size="small" href="/register" color="primary">
               Register now
             </Button>
           </Typography>
