@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import toast from 'react-hot-toast';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import toast from "react-hot-toast";
 import {
   Container,
   Grid,
@@ -36,7 +36,15 @@ import {
   LinearProgress,
   Tabs,
   Tab,
-} from '@mui/material';
+  Tooltip,
+  Divider,
+  Fade,
+  Stack,
+  SpeedDial,
+  SpeedDialAction,
+  SpeedDialIcon,
+  Fab,
+} from "@mui/material";
 import {
   Dashboard as DashboardIcon,
   People as PeopleIcon,
@@ -61,22 +69,43 @@ import {
   Download as DownloadIcon,
   PictureAsPdf as PdfIcon,
   Home as HomeIcon,
-} from '@mui/icons-material';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
+  Person as PersonIcon,
+  Info as InfoIcon,
+  CheckCircle as CheckCircleIcon,
+  ArrowUpward as ArrowUpwardIcon,
+  ArrowDownward as ArrowDownwardIcon,
+  BarChart as BarChartIcon,
+  PieChart as PieChartIcon,
+  DateRange as DateIcon,
+  LocationOn as LocationIcon,
+  ChevronRight as ChevronRightIcon,
+  CloudDownload as CloudDownloadIcon,
+  Print as PrintIcon,
+  Share as ShareIcon,
+  ContentCopy as CopyIcon,
+  Clear as ClearIcon,
+  Email as EmailIcon,
+  Badge as BadgeIcon,
+  Language as LanguageIcon,
+  Map as MapIcon,
+  AccountBalance as AccountBalanceIcon,
+  CreditCard as CreditCardIcon,
+} from "@mui/icons-material";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
   AreaChart,
   Area,
-} from 'recharts';
+} from "recharts";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -86,25 +115,20 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [search, setSearch] = useState('');
-  const [searchType, setSearchType] = useState('all');
-  const [classFilter, setClassFilter] = useState('');
-  const [roomFilter, setRoomFilter] = useState('');
+  const [search, setSearch] = useState("");
+  const [searchType, setSearchType] = useState("all");
+  const [classFilter, setClassFilter] = useState("");
+  const [roomFilter, setRoomFilter] = useState("");
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [totalStudents, setTotalStudents] = useState(0);
   const [chartData, setChartData] = useState([]);
   const [roomChartData, setRoomChartData] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
+  const [downloadingRoom, setDownloadingRoom] = useState(null);
 
-  const COLORS = [
-    theme.palette.primary.main,
-    theme.palette.secondary.main,
-    theme.palette.success.main,
-    theme.palette.warning.main,
-    theme.palette.error.main,
-    theme.palette.info.main,
-  ];
+  // Simple, professional color scheme
+  const COLORS = ["#667eea", "#4caf50", "#ff9800", "#9c27b0", "#2196f3", "#f44336"];
 
   useEffect(() => {
     fetchDashboardData();
@@ -113,58 +137,75 @@ const AdminDashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await axios.get('http://localhost:5010/api/admin/dashboard/stats', {
-        headers: { 'x-auth-token': token }
-      });
-      
+      const token = localStorage.getItem("adminToken");
+      const response = await axios.get(
+        "http://13.127.187.19:5010/api/admin/dashboard/stats",
+        {
+          headers: { "x-auth-token": token },
+        },
+      );
+
       if (response.data.success) {
         setStats(response.data);
-        
-        // Prepare class chart data
+
         if (response.data.stats.class) {
-          const chartData = response.data.stats.class.map(item => ({
+          const chartData = response.data.stats.class.map((item) => ({
             name: `Class ${item._id}`,
-            students: item.count
+            students: item.count,
           }));
           setChartData(chartData);
         }
-        
-        // Prepare room chart data
+
         if (response.data.stats.rooms) {
-          const roomData = response.data.stats.rooms.map(item => ({
+          const roomData = response.data.stats.rooms.map((item) => ({
             name: `Room ${item._id}`,
             students: item.count,
-            capacity: 20
+            capacity: 20,
           }));
           setRoomChartData(roomData);
         }
-        
+
         setTotalStudents(response.data.stats.total || 0);
       }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error("Error fetching dashboard data:", error);
       if (error.response?.status === 401) {
         handleLogout();
       }
     }
   };
 
+  const calculateQuickStats = () => {
+    if (!stats || !stats.recent) return { todayRegistrations: 0, avgRegistrations: 0, completionRate: 92 };
+
+    const todayRegistrations = stats.recent.filter(
+      (s) => new Date(s.createdAt).toDateString() === new Date().toDateString()
+    ).length;
+
+    return {
+      todayRegistrations,
+      avgRegistrations: Math.round(todayRegistrations),
+      completionRate: Math.min(100, Math.round((totalStudents / 500) * 100)) // Assuming 500 max capacity
+    };
+  };
+
+  const quickStats = calculateQuickStats();
+
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('adminToken');
-      
-      let searchQuery = '';
+      const token = localStorage.getItem("adminToken");
+
+      let searchQuery = "";
       if (search) {
-        switch(searchType) {
-          case 'phone':
+        switch (searchType) {
+          case "phone":
             searchQuery = search;
             break;
-          case 'registration':
+          case "registration":
             searchQuery = search;
             break;
-          case 'room':
+          case "room":
             searchQuery = search;
             break;
           default:
@@ -177,14 +218,17 @@ const AdminDashboard = () => {
         limit: rowsPerPage,
         ...(searchQuery && { search: searchQuery }),
         ...(classFilter && { class: classFilter }),
-        ...(roomFilter && { room: roomFilter })
+        ...(roomFilter && { room: roomFilter }),
       };
 
-      const response = await axios.get('http://localhost:5010/api/admin/students', {
-        headers: { 'x-auth-token': token },
-        params
-      });
-      
+      const response = await axios.get(
+        "http://13.127.187.19:5010/api/admin/students",
+        {
+          headers: { "x-auth-token": token },
+          params,
+        },
+      );
+
       if (response.data.success) {
         setStudents(response.data.data);
         if (response.data.pagination) {
@@ -192,18 +236,44 @@ const AdminDashboard = () => {
         }
       }
     } catch (error) {
-      console.error('Error fetching students:', error);
-      toast.error('Failed to load students');
+      console.error("Error fetching students:", error);
+      toast.error("Failed to load students");
     } finally {
       setLoading(false);
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminData');
-    navigate('/admin/login');
-    toast.success('Logged out successfully');
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminData");
+    navigate("/admin/login");
+    toast.success("Logged out successfully");
+  };
+
+  const handleExport = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const response = await axios.get(
+        'http://13.127.187.19:5010/api/admin/export',
+        {
+          headers: { 'x-auth-token': token },
+          responseType: 'blob'
+        }
+      );
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `students_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      toast.success('Data exported successfully');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export data');
+    }
   };
 
   const handleChangePage = (event, newPage) => {
@@ -222,85 +292,93 @@ const AdminDashboard = () => {
 
   const handleSearchTypeChange = (e) => {
     setSearchType(e.target.value);
-    setSearch('');
+    setSearch("");
     setPage(0);
   };
 
   const handleDeleteStudent = async (studentId) => {
-    if (!window.confirm('Are you sure you want to delete this student?')) {
+    if (!window.confirm("Are you sure you want to delete this student?")) {
       return;
     }
 
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await axios.delete(`http://localhost:5010/api/admin/students/${studentId}`, {
-        headers: { 'x-auth-token': token }
-      });
-      
+      const token = localStorage.getItem("adminToken");
+      const response = await axios.delete(
+        `http://13.127.187.19:5010/api/admin/students/${studentId}`,
+        {
+          headers: { "x-auth-token": token },
+        },
+      );
+
       if (response.data.success) {
-        toast.success('Student deleted successfully');
+        toast.success("Student deleted successfully");
         fetchStudents();
         fetchDashboardData();
       }
     } catch (error) {
-      console.error('Error deleting student:', error);
-      toast.error('Failed to delete student');
-    }
-  };
-
-  const handleExport = async () => {
-    try {
-      const token = localStorage.getItem('adminToken');
-      const response = await axios.get('http://localhost:5010/api/admin/export', {
-        headers: { 'x-auth-token': token },
-        responseType: 'blob'
-      });
-      
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `students_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      
-      toast.success('Data exported successfully');
-    } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Failed to export data');
+      console.error("Error deleting student:", error);
+      toast.error("Failed to delete student");
     }
   };
 
   const handleDownloadHallTicket = (registrationCode) => {
     window.open(
-      `http://localhost:5010/api/students/${registrationCode}/hallticket/download`,
-      '_blank'
+      `http://13.127.187.19:5010/api/students/${registrationCode}/hallticket/download`,
+      "_blank",
     );
   };
 
   const handleDownloadAttendanceSheet = async (roomNo) => {
     try {
+      setDownloadingRoom(roomNo);
+
       const token = localStorage.getItem('adminToken');
+
+      if (!token) {
+        toast.error('Please login again');
+        handleLogout();
+        return;
+      }
+
       const response = await axios.get(
-        `http://localhost:5010/api/admin/room-attendance/${roomNo}/pdf`,
+        `http://13.127.187.19:5010/api/admin/room-attendance/${roomNo}/pdf`,
         {
-          headers: { 'x-auth-token': token },
-          responseType: 'blob'
+          headers: {
+            'x-auth-token': token,
+            'Accept': 'text/html'
+          },
+          responseType: 'text'
         }
       );
-      
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `Room-${roomNo}-Attendance-Sheet.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      
-      toast.success(`Attendance sheet for Room ${roomNo} downloaded successfully`);
+
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(response.data);
+        newWindow.document.close();
+
+        setTimeout(() => {
+          newWindow.print();
+        }, 1000);
+
+        toast.success(`Attendance sheet for Room ${roomNo} opened for printing`);
+      } else {
+        toast.error('Please allow popups to view the attendance sheet');
+      }
+
     } catch (error) {
       console.error('Error downloading attendance sheet:', error);
-      toast.error('Failed to download attendance sheet');
+
+      if (error.response?.status === 401) {
+        toast.error('Session expired. Please login again.');
+        handleLogout();
+      } else {
+        toast.error('Failed to generate attendance sheet');
+        const token = localStorage.getItem('adminToken');
+        const url = `http://13.127.187.19:5010/api/admin/room-attendance/${roomNo}/pdf`;
+        window.open(url, '_blank');
+      }
+    } finally {
+      setDownloadingRoom(null);
     }
   };
 
@@ -310,50 +388,89 @@ const AdminDashboard = () => {
   };
 
   const getGenderIcon = (gender) => {
-    switch(gender) {
-      case 'Male': return <MaleIcon fontSize="small" />;
-      case 'Female': return <FemaleIcon fontSize="small" />;
-      default: return <OtherIcon fontSize="small" />;
+    switch (gender) {
+      case "Male":
+        return <MaleIcon fontSize="small" />;
+      case "Female":
+        return <FemaleIcon fontSize="small" />;
+      default:
+        return <OtherIcon fontSize="small" />;
     }
   };
 
-  const StatCard = ({ title, value, icon, color, subtitle, onClick }) => (
-    <Card 
+  // Clean, professional Stat Card Component
+  const StatCard = ({
+    title,
+    value,
+    icon,
+    color = "#667eea",
+    subtitle,
+    onClick
+  }) => (
+    <Card
       onClick={onClick}
-      sx={{ 
+      sx={{
         height: '100%',
-        background: `linear-gradient(135deg, ${alpha(color, 0.1)} 0%, ${alpha(color, 0.05)} 100%)`,
-        border: `1px solid ${alpha(color, 0.2)}`,
+        background: 'white',
+        border: '1px solid #e0e0e0',
         borderRadius: 2,
-        transition: 'transform 0.2s, box-shadow 0.2s',
+        transition: 'all 0.3s ease',
         cursor: onClick ? 'pointer' : 'default',
+        position: 'relative',
+        overflow: 'hidden',
         '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: `0 8px 24px ${alpha(color, 0.15)}`,
-        }
+          transform: onClick ? 'translateY(-4px)' : 'none',
+          boxShadow: onClick ? '0 8px 24px rgba(0,0,0,0.12)' : 'none',
+          borderColor: onClick ? color : '#e0e0e0',
+        },
       }}
     >
       <CardContent sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Box>
-            <Typography variant="h6" color="text.secondary" gutterBottom sx={{ fontSize: '0.875rem', fontWeight: 500 }}>
+          <Box sx={{ flex: 1 }}>
+            <Typography
+              variant="subtitle2"
+              sx={{
+                color: 'text.secondary',
+                fontWeight: 600,
+                mb: 1,
+                display: 'block'
+              }}
+            >
               {title}
             </Typography>
-            <Typography variant="h3" component="div" sx={{ fontWeight: 700, color: color }}>
+            <Typography
+              variant="h3"
+              sx={{
+                fontWeight: 700,
+                color: color,
+                lineHeight: 1
+              }}
+            >
               {value}
             </Typography>
             {subtitle && (
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  display: 'block',
+                  mt: 1
+                }}
+              >
                 {subtitle}
               </Typography>
             )}
           </Box>
-          <Avatar sx={{ 
-            bgcolor: alpha(color, 0.1),
-            color: color,
-            width: 48,
-            height: 48
-          }}>
+          <Avatar
+            sx={{
+              bgcolor: alpha(color, 0.1),
+              color: color,
+              width: 48,
+              height: 48,
+              borderRadius: 2,
+            }}
+          >
             {icon}
           </Avatar>
         </Box>
@@ -361,13 +478,192 @@ const AdminDashboard = () => {
     </Card>
   );
 
+  // Clean Room Card Component
+  const RoomCard = ({ room, index }) => {
+    const filledPercentage = (room.count / 20) * 100;
+
+    return (
+      <Fade in={true} timeout={300 + (index * 100)}>
+        <Card
+          sx={{
+            height: '100%',
+            background: 'white',
+            border: '1px solid #e0e0e0',
+            borderRadius: 2,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            }
+          }}
+        >
+          <CardContent sx={{ p: 2.5 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  Room {room._id}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Capacity: 20 seats
+                </Typography>
+              </Box>
+              <Avatar
+                sx={{
+                  bgcolor: alpha('#667eea', 0.1),
+                  color: '#667eea',
+                  width: 40,
+                  height: 40,
+                }}
+              >
+                <RoomIcon />
+              </Avatar>
+            </Box>
+
+            <Box sx={{ mb: 2.5 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Occupancy
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {room.count} / 20
+                </Typography>
+              </Box>
+              <LinearProgress
+                variant="determinate"
+                value={filledPercentage}
+                sx={{
+                  height: 6,
+                  borderRadius: 3,
+                  bgcolor: '#f5f5f5',
+                  '& .MuiLinearProgress-bar': {
+                    bgcolor: filledPercentage >= 90 ? '#f44336' :
+                      filledPercentage >= 75 ? '#ff9800' :
+                        '#4caf50',
+                    borderRadius: 3,
+                  }
+                }}
+              />
+            </Box>
+
+            <Grid container spacing={1} sx={{ mb: 2.5 }}>
+              <Grid item xs={6}>
+                <Paper
+                  sx={{
+                    p: 1,
+                    textAlign: 'center',
+                    bgcolor: '#f9f9f9',
+                    borderRadius: 1.5,
+                    border: '1px solid #e0e0e0'
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Available
+                  </Typography>
+                  <Typography variant="h6" color="#4caf50" fontWeight={600}>
+                    {20 - room.count}
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={6}>
+                <Paper
+                  sx={{
+                    p: 1,
+                    textAlign: 'center',
+                    bgcolor: '#f9f9f9',
+                    borderRadius: 1.5,
+                    border: '1px solid #e0e0e0'
+                  }}
+                >
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Occupied
+                  </Typography>
+                  <Typography variant="h6" color="#2196f3" fontWeight={600}>
+                    {room.count}
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+
+            <Stack spacing={1}>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<VisibilityIcon />}
+                onClick={() => {
+                  setRoomFilter(room._id.toString());
+                  setActiveTab(1);
+                }}
+                fullWidth
+                sx={{
+                  bgcolor: '#667eea',
+                  color: 'white',
+                  borderRadius: 1.5,
+                  py: 0.75,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  '&:hover': {
+                    bgcolor: '#5a6fd8',
+                  }
+                }}
+              >
+                View Students
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<PdfIcon />}
+                onClick={() => handleDownloadAttendanceSheet(room._id)}
+                disabled={downloadingRoom === room._id}
+                fullWidth
+                sx={{
+                  borderColor: '#ddd',
+                  color: 'text.primary',
+                  borderRadius: 1.5,
+                  py: 0.75,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: '#667eea',
+                    color: '#667eea',
+                    bgcolor: alpha('#667eea', 0.04),
+                  }
+                }}
+              >
+                {downloadingRoom === room._id ? 'Downloading...' : 'Download Sheet'}
+              </Button>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Fade>
+    );
+  };
+
   if (loading && !stats) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <Box sx={{ width: '100%', maxWidth: 400, textAlign: 'center' }}>
-          <LinearProgress sx={{ mb: 2 }} />
-          <Typography variant="body1" color="text.secondary">
-            Loading dashboard...
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          background: '#f5f7fa',
+        }}
+      >
+        <Box sx={{ textAlign: 'center' }}>
+          <Box
+            sx={{
+              width: 60,
+              height: 60,
+              borderRadius: '50%',
+              border: '3px solid #e0e0e0',
+              borderTopColor: '#667eea',
+              animation: 'spin 1s linear infinite',
+              mx: 'auto',
+              mb: 3,
+            }}
+          />
+          <Typography variant="h6" fontWeight={600}>
+            Loading Dashboard...
           </Typography>
         </Box>
       </Box>
@@ -375,672 +671,749 @@ const AdminDashboard = () => {
   }
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%)',
-      py: 3,
-      px: { xs: 2, md: 4 }
-    }}>
-      <Container maxWidth="xl" disableGutters>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: '#f5f7fa',
+      }}
+    >
+      <Container maxWidth="xl" sx={{ pt: 3, pb: 6 }}>
         {/* Header */}
-        <Paper sx={{ 
-          p: 3, 
-          mb: 4, 
-          borderRadius: 2,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
-        }}>
-          <Grid container alignItems="center" justifyContent="space-between" spacing={2}>
-            <Grid item xs={12} md={6}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar sx={{ 
-                  bgcolor: 'rgba(255,255,255,0.2)',
-                  width: 56,
-                  height: 56,
-                  backdropFilter: 'blur(10px)'
-                }}>
-                  <DashboardIcon fontSize="large" />
-                </Avatar>
-                <Box>
-                  <Typography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 0.5 }}>
-                    Admin Dashboard
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    Manage student registrations and view analytics
-                  </Typography>
+        <Paper
+          sx={{
+            mb: 4,
+            borderRadius: 2,
+            background: 'white',
+            border: '1px solid #e0e0e0',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+            overflow: 'hidden',
+          }}
+        >
+          <Box sx={{ p: 3 }}>
+            <Grid container alignItems="center" justifyContent="space-between" spacing={2}>
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <Avatar
+                    sx={{
+                      width: 56,
+                      height: 56,
+                      background: '#667eea',
+                    }}
+                  >
+                    <DashboardIcon />
+                  </Avatar>
+                  <Box>
+                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                      Admin Dashboard
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                      Manage student registrations and analytics
+                    </Typography>
+                  </Box>
                 </Box>
-              </Box>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, flexWrap: 'wrap' }}>
+                  <Tooltip title="Refresh Data">
+                    <IconButton
+                      onClick={() => { fetchDashboardData(); fetchStudents(); }}
+                      sx={{
+                        color: '#667eea',
+                      }}
+                    >
+                      <RefreshIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Export Data">
+                    <IconButton
+                      onClick={handleExport}
+                      sx={{
+                        color: '#4caf50',
+                      }}
+                    >
+                      <CloudDownloadIcon />
+                    </IconButton>
+                  </Tooltip>
+                  <Button
+                    variant="outlined"
+                    startIcon={<LogoutIcon />}
+                    onClick={handleLogout}
+                    sx={{
+                      color: '#f44336',
+                      borderColor: '#f44336',
+                      borderRadius: 1.5,
+                      px: 2,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      '&:hover': {
+                        borderColor: '#d32f2f',
+                        bgcolor: alpha('#f44336', 0.04),
+                      }
+                    }}
+                  >
+                    Logout
+                  </Button>
+                </Box>
+              </Grid>
             </Grid>
-            <Grid item xs={12} md={6}>
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, flexWrap: 'wrap' }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={<RefreshIcon />}
-                  onClick={() => {
-                    fetchDashboardData();
-                    fetchStudents();
-                  }}
-                  sx={{ 
-                    bgcolor: 'rgba(255,255,255,0.9)',
-                    color: '#667eea',
-                    '&:hover': { bgcolor: 'white' }
-                  }}
-                >
-                  Refresh
-                </Button>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  startIcon={<LogoutIcon />}
-                  onClick={handleLogout}
-                  sx={{ 
-                    bgcolor: 'rgba(255,255,255,0.9)',
-                    color: '#667eea',
-                    '&:hover': { bgcolor: 'white' }
-                  }}
-                >
-                  Logout
-                </Button>
-              </Box>
-            </Grid>
-          </Grid>
-        </Paper>
+          </Box>
 
-        {/* Tabs for different views */}
-        <Paper sx={{ mb: 4, borderRadius: 2 }}>
-          <Tabs 
-            value={activeTab} 
-            onChange={(e, newValue) => setActiveTab(newValue)}
-            variant="fullWidth"
-            sx={{ borderBottom: 1, borderColor: 'divider' }}
-          >
-            <Tab 
-              label="Overview" 
-              icon={<DashboardIcon />} 
-              iconPosition="start" 
-            />
-            <Tab 
-              label="Students" 
-              icon={<PeopleIcon />} 
-              iconPosition="start" 
-            />
-            <Tab 
-              label="Rooms" 
-              icon={<RoomIcon />} 
-              iconPosition="start" 
-            />
-          </Tabs>
+          {/* Tabs */}
+          <Box sx={{ px: 3, borderTop: '1px solid #e0e0e0' }}>
+            <Tabs
+              value={activeTab}
+              onChange={(e, newValue) => setActiveTab(newValue)}
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{
+                '& .MuiTabs-indicator': {
+                  height: 3,
+                  background: '#667eea',
+                },
+                '& .MuiTab-root': {
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                  minHeight: 60,
+                  color: 'text.secondary',
+                  '&.Mui-selected': {
+                    color: '#667eea',
+                  },
+                }
+              }}
+            >
+              <Tab
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <DashboardIcon />
+                    Overview
+                  </Box>
+                }
+              />
+              <Tab
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PeopleIcon />
+                    Students
+                    <Chip
+                      label={totalStudents}
+                      size="small"
+                      sx={{ height: 20, fontSize: '0.75rem', fontWeight: 600, ml: 1 }}
+                    />
+                  </Box>
+                }
+              />
+              <Tab
+                label={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <RoomIcon />
+                    Rooms
+                    <Chip
+                      label={stats?.stats.rooms?.length || 0}
+                      size="small"
+                      sx={{ height: 20, fontSize: '0.75rem', fontWeight: 600, ml: 1 }}
+                    />
+                  </Box>
+                }
+              />
+            </Tabs>
+          </Box>
         </Paper>
 
         {activeTab === 0 && (
           <>
-            {/* Stats Cards */}
+            {/* Stats Overview */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
               <Grid item xs={12} sm={6} md={3}>
                 <StatCard
                   title="Total Students"
                   value={totalStudents}
                   icon={<PeopleIcon />}
-                  color={theme.palette.primary.main}
-                  subtitle="All registered students"
+                  color="#667eea"
+                  subtitle="All registrations"
                   onClick={() => setActiveTab(1)}
                 />
               </Grid>
-              
               <Grid item xs={12} sm={6} md={3}>
                 <StatCard
-                  title="Total Rooms"
+                  title="Active Rooms"
                   value={stats?.stats.rooms?.length || 0}
                   icon={<RoomIcon />}
-                  color={theme.palette.secondary.main}
+                  color="#4caf50"
                   subtitle="Occupied rooms"
                   onClick={() => setActiveTab(2)}
                 />
               </Grid>
-              
               <Grid item xs={12} sm={6} md={3}>
                 <StatCard
                   title="Today's Registrations"
-                  value={stats?.recent?.filter(s => 
-                    new Date(s.createdAt).toDateString() === new Date().toDateString()
-                  ).length || 0}
+                  value={quickStats.todayRegistrations}
                   icon={<TrendingUpIcon />}
-                  color={theme.palette.success.main}
+                  color="#ff9800"
                   subtitle="Registered today"
                 />
               </Grid>
-              
               <Grid item xs={12} sm={6} md={3}>
                 <StatCard
-                  title="Export Data"
-                  value="CSV"
-                  icon={<FileDownloadIcon />}
-                  color={theme.palette.info.main}
-                  subtitle="Download all records"
-                  onClick={handleExport}
+                  title="Completion Rate"
+                  value={`${quickStats.completionRate}%`}
+                  icon={<CheckCircleIcon />}
+                  color="#9c27b0"
+                  subtitle="Registration progress"
                 />
               </Grid>
             </Grid>
 
             {/* Charts Section */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
-              {/* Gender Distribution */}
-              <Grid item xs={12} md={6}>
-                <Paper sx={{ 
-                  p: 3, 
-                  borderRadius: 2,
-                  height: '100%',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
-                }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                    <Avatar sx={{ 
-                      bgcolor: alpha(theme.palette.primary.main, 0.1),
-                      color: theme.palette.primary.main,
-                      mr: 2
-                    }}>
-                      <PeopleIcon />
-                    </Avatar>
+              <Grid item xs={12} lg={8}>
+                <Paper
+                  sx={{
+                    p: 3,
+                    borderRadius: 3,
+                    background: 'rgba(255,255,255,0.9)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+                    height: '100%',
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
                     <Box>
-                      <Typography variant="h6" gutterBottom>
-                        Gender Distribution
+                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+                        Registration Analytics
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Registered students by gender
+                        Daily registration trends
                       </Typography>
                     </Box>
+                    <Chip
+                      label="Last 7 Days"
+                      size="small"
+                      icon={<DateIcon />}
+                      sx={{ borderRadius: 2, fontWeight: 600 }}
+                    />
                   </Box>
                   <Box sx={{ height: 300 }}>
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={stats?.stats.gender || []}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={90}
-                          paddingAngle={5}
-                          dataKey="count"
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(1)}%`}
-                        >
-                          {(stats?.stats.gender || []).map((entry, index) => (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill={COLORS[index % COLORS.length]}
-                              strokeWidth={2}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip 
-                          formatter={(value) => [value, 'Students']}
-                          contentStyle={{ borderRadius: 8, border: 'none', boxShadow: theme.shadows[3] }}
-                        />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </Box>
-                </Paper>
-              </Grid>
-              
-              {/* Class-wise Distribution */}
-              <Grid item xs={12} md={6}>
-                <Paper sx={{ 
-                  p: 3, 
-                  borderRadius: 2,
-                  height: '100%',
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
-                }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                    <Avatar sx={{ 
-                      bgcolor: alpha(theme.palette.success.main, 0.1),
-                      color: theme.palette.success.main,
-                      mr: 2
-                    }}>
-                      <SchoolIcon />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="h6" gutterBottom>
-                        Class-wise Distribution
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Students distribution across classes
-                      </Typography>
-                    </Box>
-                  </Box>
-                  <Box sx={{ height: 300 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData}>
-                        <CartesianGrid 
-                          strokeDasharray="3 3" 
-                          stroke={alpha(theme.palette.divider, 0.5)} 
-                          vertical={false}
-                        />
-                        <XAxis 
-                          dataKey="name" 
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: theme.palette.text.secondary }}
-                        />
-                        <YAxis 
-                          axisLine={false}
-                          tickLine={false}
-                          tick={{ fill: theme.palette.text.secondary }}
-                        />
-                        <Tooltip 
-                          contentStyle={{ 
-                            borderRadius: 8, 
-                            border: 'none', 
-                            boxShadow: theme.shadows[3],
-                            background: theme.palette.background.paper
+                      <AreaChart data={chartData}>
+                        <defs>
+                          <linearGradient id="colorStudents" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#667eea" stopOpacity={0.8} />
+                            <stop offset="95%" stopColor="#667eea" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <RechartsTooltip
+                          contentStyle={{
+                            borderRadius: 8,
+                            border: 'none',
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
                           }}
-                          formatter={(value) => [value, 'Students']}
                         />
-                        <Bar 
-                          dataKey="students" 
-                          fill={theme.palette.primary.main}
-                          radius={[4, 4, 0, 0]}
-                          maxBarSize={60}
+                        <Area
+                          type="monotone"
+                          dataKey="students"
+                          stroke="#667eea"
+                          fillOpacity={1}
+                          fill="url(#colorStudents)"
+                          strokeWidth={2}
                         />
-                      </BarChart>
+                      </AreaChart>
                     </ResponsiveContainer>
                   </Box>
                 </Paper>
               </Grid>
+              <Grid item xs={12} lg={4}>
+  <Paper
+    sx={{
+      p: 3,
+      borderRadius: 2,
+      background: 'white',
+      border: '1px solid #e0e0e0',
+      boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+      height: '100%',
+    }}
+  >
+    <Box sx={{ mb: 3 }}>
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+        Gender Distribution
+      </Typography>
+      <Typography variant="body2" color="text.secondary">
+        Student gender distribution
+      </Typography>
+    </Box>
+    <Box sx={{ height: 250, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {stats?.stats.gender && stats.stats.gender.length > 0 ? (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={stats.stats.gender}
+            margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis 
+              dataKey="_id" 
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: '#666', fontSize: 12 }}
+            />
+            <YAxis 
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: '#666', fontSize: 12 }}
+            />
+            <RechartsTooltip 
+              formatter={(value) => [`${value} students`, 'Count']}
+              labelFormatter={(label) => `${label}`}
+              contentStyle={{
+                borderRadius: 6,
+                border: '1px solid #e0e0e0',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                background: 'white',
+              }}
+            />
+            <Bar
+              dataKey="count"
+              name="Students"
+              fill="#667eea"
+              radius={[4, 4, 0, 0]}
+              maxBarSize={40}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      ) : (
+        <Box sx={{ textAlign: 'center', color: 'text.secondary' }}>
+          <PeopleIcon sx={{ fontSize: 60, opacity: 0.3, mb: 2 }} />
+          <Typography>No gender data available</Typography>
+        </Box>
+      )}
+    </Box>
+    {/* Add summary below the chart */}
+    {stats?.stats.gender && stats.stats.gender.length > 0 && (
+      <Box sx={{ mt: 2, pt: 2, borderTop: '1px dashed #e0e0e0' }}>
+        <Grid container spacing={1}>
+          {stats.stats.gender.map((item, index) => (
+            <Grid item xs={6} key={index}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography variant="body2" color="text.secondary">
+                  {item._id}:
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {item.count}
+                </Typography>
+              </Box>
+            </Grid>
+          ))}
+          <Grid item xs={12}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Total:
+              </Typography>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                {stats.stats.gender.reduce((sum, item) => sum + item.count, 0)}
+              </Typography>
+            </Box>
+          </Grid>
+        </Grid>
+      </Box>
+    )}
+  </Paper>
+</Grid>
             </Grid>
 
-            {/* Room-wise Distribution */}
-            <Paper sx={{ 
-              p: 3, 
-              mb: 4, 
-              borderRadius: 2,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
-            }}>
+            {/* Recent Activity */}
+            <Paper
+              sx={{
+                p: 3,
+                borderRadius: 2,
+                background: 'white',
+                border: '1px solid #e0e0e0',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+              }}
+            >
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Avatar sx={{ 
-                    bgcolor: alpha(theme.palette.secondary.main, 0.1),
-                    color: theme.palette.secondary.main,
-                    mr: 2
-                  }}>
-                    <RoomIcon />
-                  </Avatar>
-                  <Box>
-                    <Typography variant="h6" gutterBottom>
-                      Room-wise Distribution
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Students distribution across rooms
-                    </Typography>
-                  </Box>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+                    Recent Registrations
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Latest student registrations
+                  </Typography>
                 </Box>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  endIcon={<ChevronRightIcon />}
+                  onClick={() => setActiveTab(1)}
+                  sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 600 }}
+                >
+                  View All
+                </Button>
               </Box>
-              <Box sx={{ height: 300 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={roomChartData}>
-                    <CartesianGrid 
-                      strokeDasharray="3 3" 
-                      stroke={alpha(theme.palette.divider, 0.5)} 
-                      vertical={false}
-                    />
-                    <XAxis 
-                      dataKey="name" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: theme.palette.text.secondary }}
-                    />
-                    <YAxis 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: theme.palette.text.secondary }}
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        borderRadius: 8, 
-                        border: 'none', 
-                        boxShadow: theme.shadows[3],
-                        background: theme.palette.background.paper
+              <Grid container spacing={2}>
+                {stats?.recent?.slice(0, 4).map((student, index) => (
+                  <Grid item xs={12} sm={6} md={3} key={index}>
+                    <Card
+                      sx={{
+                        height: '100%',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: 2,
                       }}
-                      formatter={(value, name) => {
-                        if (name === 'students') return [value, 'Students'];
-                        if (name === 'capacity') return [value, 'Capacity'];
-                        return [value, name];
-                      }}
-                    />
-                    <Bar 
-                      dataKey="students" 
-                      fill={theme.palette.secondary.main}
-                      radius={[4, 4, 0, 0]}
-                      maxBarSize={60}
-                    />
-                    <Bar 
-                      dataKey="capacity" 
-                      fill={alpha(theme.palette.secondary.main, 0.3)}
-                      radius={[4, 4, 0, 0]}
-                      maxBarSize={60}
-                    />
-                    <Legend />
-                  </BarChart>
-                </ResponsiveContainer>
-              </Box>
+                    >
+                      <CardContent sx={{ p: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                          <Avatar
+                            sx={{
+                              width: 40,
+                              height: 40,
+                              bgcolor: alpha('#667eea', 0.1),
+                              color: '#667eea',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {student.name.charAt(0)}
+                          </Avatar>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                              {student.name}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {student.registrationCode}
+                            </Typography>
+                          </Box>
+                        </Box>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Chip
+                            label={`Room ${student.roomNo}`}
+                            size="small"
+                            sx={{
+                              height: 20,
+                              fontSize: '0.7rem',
+                              bgcolor: alpha('#4caf50', 0.1),
+                              color: '#4caf50',
+                              fontWeight: 600
+                            }}
+                          />
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(student.createdAt).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
             </Paper>
           </>
         )}
 
         {activeTab === 1 && (
           <>
-            {/* Students Table */}
-            <Paper sx={{ 
-              p: 3, 
-              mb: 4, 
-              borderRadius: 2,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
-            }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Box>
-                  <Typography variant="h6" gutterBottom>
-                    Registered Students
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Manage and view all student registrations
-                  </Typography>
+            {/* Students Table Section */}
+            <Paper
+              sx={{
+                mb: 4,
+                borderRadius: 2,
+                background: 'white',
+                border: '1px solid #e0e0e0',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+                overflow: 'hidden',
+              }}
+            >
+              <Box sx={{ p: 3, pb: 0 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                  <Box>
+                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+                      Student Management
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Manage and filter student registrations
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Tooltip title="Export All Data">
+                      <Fab
+                        size="small"
+                        onClick={handleExport}
+                        sx={{
+                          bgcolor: '#4caf50',
+                          color: 'white',
+                          '&:hover': {
+                            bgcolor: '#388e3c',
+                          }
+                        }}
+                      >
+                        <CloudDownloadIcon />
+                      </Fab>
+                    </Tooltip>
+                  </Box>
                 </Box>
-                
-                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                  <Button
-                    variant="outlined"
-                    startIcon={<RefreshIcon />}
-                    onClick={() => {
-                      fetchDashboardData();
-                      fetchStudents();
-                    }}
-                  >
-                    Refresh
-                  </Button>
-                  <Button
-                    variant="contained"
-                    startIcon={<FileDownloadIcon />}
-                    onClick={handleExport}
-                    sx={{ 
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      color: 'white',
-                      '&:hover': {
-                        background: 'linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%)',
-                      }
-                    }}
-                  >
-                    Export Data
-                  </Button>
-                </Box>
+
+                {/* Search & Filters */}
+                <Paper
+                  sx={{
+                    p: 2,
+                    mb: 3,
+                    borderRadius: 2,
+                    bgcolor: '#f9f9f9',
+                    border: '1px solid #e0e0e0',
+                  }}
+                >
+                  <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} md={4}>
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Search Type</InputLabel>
+                        <Select
+                          value={searchType}
+                          label="Search Type"
+                          onChange={handleSearchTypeChange}
+                        >
+                          <MenuItem value="all">All Fields</MenuItem>
+                          <MenuItem value="phone">Phone Number</MenuItem>
+                          <MenuItem value="registration">Registration Code</MenuItem>
+                          <MenuItem value="room">Room Number</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                      <TextField
+                        fullWidth
+                        size="small"
+                        placeholder={
+                          searchType === "phone"
+                            ? "Search by phone number..."
+                            : searchType === "registration"
+                            ? "Search by registration code..."
+                            : searchType === "room"
+                            ? "Search by room number..."
+                            : "Search by name, code, phone, or village..."
+                        }
+                        value={search}
+                        onChange={handleSearch}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <SearchIcon />
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={2}>
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Class</InputLabel>
+                        <Select
+                          value={classFilter}
+                          label="Class"
+                          onChange={(e) => setClassFilter(e.target.value)}
+                        >
+                          <MenuItem value="">All Classes</MenuItem>
+                          {["7", "8", "9", "10", "11", "12"].map((grade) => (
+                            <MenuItem key={grade} value={grade}>
+                              Class {grade}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12} md={2}>
+                      <FormControl fullWidth size="small">
+                        <InputLabel>Room</InputLabel>
+                        <Select
+                          value={roomFilter}
+                          label="Room"
+                          onChange={(e) => setRoomFilter(e.target.value)}
+                        >
+                          <MenuItem value="">All Rooms</MenuItem>
+                          {stats?.stats.rooms?.map((room) => (
+                            <MenuItem key={room._id} value={room._id}>
+                              Room {room._id}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  </Grid>
+                </Paper>
               </Box>
 
-              {/* Advanced Search Filters */}
-              <Paper sx={{ 
-                p: 2, 
-                mb: 3, 
-                borderRadius: 2,
-                bgcolor: alpha(theme.palette.background.default, 0.5)
-              }}>
-                <Grid container spacing={2} alignItems="center">
-                  <Grid item xs={12} md={3}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Search Type</InputLabel>
-                      <Select
-                        value={searchType}
-                        label="Search Type"
-                        onChange={handleSearchTypeChange}
-                        startAdornment={
-                          <InputAdornment position="start">
-                            <FilterListIcon fontSize="small" />
-                          </InputAdornment>
-                        }
-                      >
-                        <MenuItem value="all">All Fields</MenuItem>
-                        <MenuItem value="phone">Phone Number</MenuItem>
-                        <MenuItem value="registration">Registration Code</MenuItem>
-                        <MenuItem value="room">Room Number</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  
-                  <Grid item xs={12} md={3}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      placeholder={
-                        searchType === 'phone' ? 'Search by phone number...' :
-                        searchType === 'registration' ? 'Search by registration code...' :
-                        searchType === 'room' ? 'Search by room number...' :
-                        'Search by name, code, phone, or village...'
-                      }
-                      value={search}
-                      onChange={handleSearch}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <SearchIcon />
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12} md={3}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Filter by Class</InputLabel>
-                      <Select
-                        value={classFilter}
-                        label="Filter by Class"
-                        onChange={(e) => setClassFilter(e.target.value)}
-                      >
-                        <MenuItem value="">All Classes</MenuItem>
-                        {['7', '8', '9', '10', '11', '12'].map((grade) => (
-                          <MenuItem key={grade} value={grade}>
-                            Class {grade}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                  
-                  <Grid item xs={12} md={3}>
-                    <FormControl fullWidth size="small">
-                      <InputLabel>Filter by Room</InputLabel>
-                      <Select
-                        value={roomFilter}
-                        label="Filter by Room"
-                        onChange={(e) => setRoomFilter(e.target.value)}
-                      >
-                        <MenuItem value="">All Rooms</MenuItem>
-                        {stats?.stats.rooms?.map((room) => (
-                          <MenuItem key={room._id} value={room._id}>
-                            Room {room._id} ({room.count} students)
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </Grid>
-                </Grid>
-              </Paper>
-
-              <TableContainer sx={{ borderRadius: 1, border: `1px solid ${theme.palette.divider}` }}>
+              <TableContainer>
                 <Table>
-                  <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.05) }}>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 600, py: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <NumbersIcon fontSize="small" />
-                          Reg. Code
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, py: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <AssignmentIcon fontSize="small" />
-                          App. No.
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, py: 2 }}>Name</TableCell>
-                      <TableCell sx={{ fontWeight: 600, py: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <SchoolIcon fontSize="small" />
-                          Class
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, py: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <RoomIcon fontSize="small" />
-                          Room/Seat
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, py: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <PhoneIcon fontSize="small" />
-                          Phone
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600, py: 2 }}>Gender</TableCell>
-                      <TableCell sx={{ fontWeight: 600, py: 2 }}>Date</TableCell>
-                      <TableCell sx={{ fontWeight: 600, py: 2 }} align="center">Actions</TableCell>
+                  <TableHead>
+                    <TableRow sx={{
+                      bgcolor: '#f9f9f9',
+                      '& th': {
+                        fontWeight: 600,
+                        color: 'text.primary',
+                        borderBottom: '2px solid #e0e0e0',
+                        py: 2,
+                      }
+                    }}>
+                      <TableCell>Student</TableCell>
+                      <TableCell>Contact</TableCell>
+                      <TableCell>Academic Info</TableCell>
+                      <TableCell>Registration</TableCell>
+                      <TableCell align="center">Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {students.map((student) => (
-                      <TableRow 
+                      <TableRow
                         key={student._id}
                         hover
-                        sx={{ 
-                          '&:last-child td, &:last-child th': { border: 0 },
-                          transition: 'background-color 0.2s',
+                        sx={{
                           '&:hover': {
-                            bgcolor: alpha(theme.palette.primary.main, 0.02)
+                            bgcolor: '#f9f9f9',
+                          },
+                          '& td': {
+                            py: 2,
+                            borderBottom: '1px solid #e0e0e0',
                           }
                         }}
                       >
                         <TableCell>
-                          <Chip
-                            label={student.registrationCode}
-                            size="small"
-                            sx={{ 
-                              fontWeight: 600,
-                              fontFamily: 'monospace',
-                              bgcolor: alpha(theme.palette.primary.main, 0.1),
-                              color: theme.palette.primary.main
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell sx={{ fontFamily: 'monospace' }}>
-                          {student.applicationNo}
-                        </TableCell>
-                        <TableCell>
-                          <Box>
-                            <Typography variant="body2" fontWeight={500}>
-                              {student.name}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {student.fatherName}
-                            </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Avatar
+                              sx={{
+                                width: 40,
+                                height: 40,
+                                bgcolor: alpha('#667eea', 0.1),
+                                color: '#667eea',
+                                fontWeight: 600,
+                              }}
+                            >
+                              {student.name.charAt(0)}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="body1" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                {student.name}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary" display="block">
+                                {student.fatherName}
+                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                <Chip
+                                  label={student.gender}
+                                  size="small"
+                                  icon={getGenderIcon(student.gender)}
+                                  sx={{
+                                    height: 20,
+                                    fontSize: '0.7rem',
+                                    bgcolor: alpha('#4caf50', 0.1),
+                                    color: '#4caf50',
+                                  }}
+                                />
+                              </Box>
+                            </Box>
                           </Box>
                         </TableCell>
                         <TableCell>
-                          <Chip
-                            label={`Class ${student.studyingClass}`}
-                            size="small"
-                            variant="outlined"
-                            sx={{ fontWeight: 500 }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                            <Chip
-                              icon={<RoomIcon fontSize="small" />}
-                              label={`Room ${student.roomNo}`}
-                              size="small"
-                              variant="outlined"
-                              sx={{ 
-                                bgcolor: alpha(theme.palette.secondary.main, 0.1),
-                                color: theme.palette.secondary.main
-                              }}
-                            />
-                            <Chip
-                              icon={<SeatIcon fontSize="small" />}
-                              label={`Seat ${student.seatNo}`}
-                              size="small"
-                              variant="outlined"
-                              sx={{ 
-                                bgcolor: alpha(theme.palette.success.main, 0.1),
-                                color: theme.palette.success.main
-                              }}
-                            />
-                          </Box>
-                        </TableCell>
-                        <TableCell sx={{ fontFamily: 'monospace' }}>
-                          {student.phoneNo}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            icon={getGenderIcon(student.gender)}
-                            label={student.gender}
-                            size="small"
-                            variant="outlined"
-                            sx={{ 
-                              bgcolor: alpha(
-                                student.gender === 'Male' ? theme.palette.info.main :
-                                student.gender === 'Female' ? theme.palette.success.main :
-                                theme.palette.warning.main,
-                                0.1
-                              )
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {new Date(student.createdAt).toLocaleDateString('en-IN')}
+                          <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                            {student.phoneNo}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {new Date(student.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                            Aadhaar: {student.aadhaarNo}
                           </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                            <Chip
+                              label={`Class ${student.studyingClass}`}
+                              size="small"
+                              sx={{
+                                width: 'fit-content',
+                                bgcolor: alpha('#ff9800', 0.1),
+                                color: '#ff9800',
+                                fontWeight: 600,
+                              }}
+                            />
+                            <Typography variant="caption" color="text.secondary">
+                              {student.schoolName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Medium: {student.medium}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                            <Chip
+                              label={student.registrationCode}
+                              size="small"
+                              sx={{
+                                width: 'fit-content',
+                                fontFamily: 'monospace',
+                                bgcolor: alpha('#667eea', 0.1),
+                                color: '#667eea',
+                                fontWeight: 600,
+                              }}
+                            />
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {new Date(student.createdAt).toLocaleDateString()}
+                            </Typography>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              <Chip
+                                label={`Room ${student.roomNo}`}
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: '0.7rem',
+                                  bgcolor: alpha('#9c27b0', 0.1),
+                                  color: '#9c27b0',
+                                  fontWeight: 600,
+                                }}
+                              />
+                              <Chip
+                                label={`Seat ${student.seatNo}`}
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: '0.7rem',
+                                  bgcolor: alpha('#4caf50', 0.1),
+                                  color: '#4caf50',
+                                  fontWeight: 600,
+                                }}
+                              />
+                            </Box>
+                          </Box>
                         </TableCell>
                         <TableCell align="center">
                           <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleViewDetails(student)}
-                              sx={{ 
-                                bgcolor: alpha(theme.palette.info.main, 0.1),
-                                color: theme.palette.info.main,
-                                '&:hover': {
-                                  bgcolor: alpha(theme.palette.info.main, 0.2)
-                                }
-                              }}
-                            >
-                              <VisibilityIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDownloadHallTicket(student.registrationCode)}
-                              sx={{ 
-                                bgcolor: alpha(theme.palette.success.main, 0.1),
-                                color: theme.palette.success.main,
-                                '&:hover': {
-                                  bgcolor: alpha(theme.palette.success.main, 0.2)
-                                }
-                              }}
-                            >
-                              <DownloadIcon fontSize="small" />
-                            </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDeleteStudent(student._id)}
-                              sx={{ 
-                                bgcolor: alpha(theme.palette.error.main, 0.1),
-                                color: theme.palette.error.main,
-                                '&:hover': {
-                                  bgcolor: alpha(theme.palette.error.main, 0.2)
-                                }
-                              }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
+                            <Tooltip title="View Details">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleViewDetails(student)}
+                                sx={{
+                                  color: '#2196f3',
+                                }}
+                              >
+                                <VisibilityIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Download Hall Ticket">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDownloadHallTicket(student.registrationCode)}
+                                sx={{
+                                  color: '#4caf50',
+                                }}
+                              >
+                                <DownloadIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleDeleteStudent(student._id)}
+                                sx={{
+                                  color: '#f44336',
+                                }}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
                           </Box>
                         </TableCell>
                       </TableRow>
@@ -1051,7 +1424,14 @@ const AdminDashboard = () => {
 
               {students.length === 0 && !loading && (
                 <Box sx={{ textAlign: 'center', py: 8 }}>
-                  <SearchIcon sx={{ fontSize: 60, color: 'text.secondary', opacity: 0.5, mb: 2 }} />
+                  <SearchIcon
+                    sx={{
+                      fontSize: 60,
+                      color: 'text.secondary',
+                      opacity: 0.3,
+                      mb: 2,
+                    }}
+                  />
                   <Typography variant="h6" color="text.secondary" gutterBottom>
                     No students found
                   </Typography>
@@ -1069,7 +1449,10 @@ const AdminDashboard = () => {
                 rowsPerPage={rowsPerPage}
                 onRowsPerPageChange={handleChangeRowsPerPage}
                 rowsPerPageOptions={[5, 10, 25, 50]}
-                sx={{ borderTop: `1px solid ${theme.palette.divider}`, mt: 2 }}
+                sx={{
+                  borderTop: '1px solid #e0e0e0',
+                  px: 3,
+                }}
               />
             </Paper>
           </>
@@ -1078,244 +1461,144 @@ const AdminDashboard = () => {
         {activeTab === 2 && (
           <>
             {/* Room Management */}
-            <Paper sx={{ 
-              p: 3, 
-              mb: 4, 
-              borderRadius: 2,
-              boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
-            }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Paper
+              sx={{
+                p: 3,
+                mb: 4,
+                borderRadius: 2,
+                background: 'white',
+                border: '1px solid #e0e0e0',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+              }}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
                 <Box>
-                  <Typography variant="h6" gutterBottom>
+                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
                     Room Management
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    View and manage students by room
+                    Monitor and manage room allocations
                   </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Chip
+                    icon={<PeopleIcon />}
+                    label={`${totalStudents} Students`}
+                    sx={{ fontWeight: 600 }}
+                  />
+                  <Chip
+                    icon={<RoomIcon />}
+                    label={`${stats?.stats.rooms?.length || 0} Rooms`}
+                    sx={{ fontWeight: 600 }}
+                  />
                 </Box>
               </Box>
 
-              {/* Room Cards */}
               <Grid container spacing={3}>
-                {stats?.stats.rooms?.map((room) => {
-                  const filledPercentage = (room.count / 20) * 100;
-                  
-                  return (
-                    <Grid item xs={12} md={6} lg={4} key={room._id}>
-                      <Card sx={{ 
-                        height: '100%',
-                        border: `2px solid ${alpha(theme.palette.secondary.main, 0.2)}`,
-                        borderRadius: 2,
-                        transition: 'transform 0.2s, box-shadow 0.2s',
-                        '&:hover': {
-                          transform: 'translateY(-4px)',
-                          boxShadow: `0 8px 24px ${alpha(theme.palette.secondary.main, 0.15)}`,
-                        }
-                      }}>
-                        <CardContent>
-                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                            <Box>
-                              <Typography variant="h5" color="primary" sx={{ fontWeight: 700 }}>
-                                Room {room._id}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                Capacity: 20 students
-                              </Typography>
-                            </Box>
-                            <Avatar sx={{ 
-                              bgcolor: alpha(theme.palette.secondary.main, 0.1),
-                              color: theme.palette.secondary.main
-                            }}>
-                              <RoomIcon />
-                            </Avatar>
-                          </Box>
-
-                          <Box sx={{ mb: 2 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                              <Typography variant="body2" color="text.secondary">
-                                Occupancy: {room.count} / 20 students
-                              </Typography>
-                              <Typography variant="body2" color="primary" sx={{ fontWeight: 600 }}>
-                                {filledPercentage.toFixed(0)}%
-                              </Typography>
-                            </Box>
-                            <LinearProgress 
-                              variant="determinate" 
-                              value={filledPercentage} 
-                              sx={{ 
-                                height: 8,
-                                borderRadius: 4,
-                                bgcolor: alpha(theme.palette.secondary.main, 0.1),
-                                '& .MuiLinearProgress-bar': {
-                                  bgcolor: filledPercentage >= 90 ? theme.palette.error.main :
-                                           filledPercentage >= 75 ? theme.palette.warning.main :
-                                           theme.palette.success.main,
-                                  borderRadius: 4
-                                }
-                              }}
-                            />
-                          </Box>
-
-                          <Box sx={{ mb: 3 }}>
-                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                              Available Seats: {20 - room.count}
-                            </Typography>
-                          </Box>
-
-                          <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              startIcon={<VisibilityIcon />}
-                              onClick={() => {
-                                setRoomFilter(room._id.toString());
-                                setActiveTab(1);
-                              }}
-                              fullWidth
-                            >
-                              View Students
-                            </Button>
-                            <Button
-                              variant="contained"
-                              size="small"
-                              startIcon={<PdfIcon />}
-                              onClick={() => handleDownloadAttendanceSheet(room._id)}
-                              fullWidth
-                              sx={{ 
-                                bgcolor: '#000',
-                                color: '#fff',
-                                '&:hover': {
-                                  bgcolor: '#333'
-                                }
-                              }}
-                            >
-                              Download Attendance Sheet
-                            </Button>
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  );
-                })}
+                {stats?.stats.rooms?.map((room, index) => (
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={room._id}>
+                    <RoomCard room={room} index={index} />
+                  </Grid>
+                ))}
               </Grid>
             </Paper>
           </>
         )}
 
         {/* Student Details Dialog */}
-        <Dialog 
-          open={dialogOpen} 
-          onClose={() => setDialogOpen(false)} 
-          maxWidth="md" 
+        <Dialog
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          maxWidth="md"
           fullWidth
           PaperProps={{
             sx: { borderRadius: 2 }
           }}
         >
-          <DialogTitle sx={{ 
-            bgcolor: alpha(theme.palette.primary.main, 0.05),
-            borderBottom: `1px solid ${theme.palette.divider}`,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2
-          }}>
-            <Avatar sx={{ 
-              bgcolor: theme.palette.primary.main,
-              color: 'white'
-            }}>
-              <PeopleIcon />
-            </Avatar>
-            <Box>
-              <Typography variant="h6">Student Details</Typography>
-              <Typography variant="caption" color="text.secondary">
-                Complete registration information
-              </Typography>
+          <DialogTitle sx={{ borderBottom: '1px solid #e0e0e0' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar sx={{ bgcolor: '#667eea' }}>
+                <PersonIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="h6">Student Details</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Complete registration information
+                </Typography>
+              </Box>
             </Box>
           </DialogTitle>
           <DialogContent sx={{ p: 3 }}>
             {selectedStudent && (
               <Grid container spacing={3}>
                 <Grid item xs={12}>
-                  <Paper sx={{ 
-                    p: 2, 
-                    mb: 2, 
-                    bgcolor: alpha(theme.palette.primary.main, 0.05),
-                    borderRadius: 2
-                  }}>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} md={6}>
-                        <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                          Registration Code
-                        </Typography>
-                        <Typography variant="h6" sx={{ fontFamily: 'monospace', color: theme.palette.primary.main }}>
-                          {selectedStudent.registrationCode}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                          Application Number
-                        </Typography>
-                        <Typography variant="h6" sx={{ fontFamily: 'monospace' }}>
-                          {selectedStudent.applicationNo}
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                  </Paper>
+                  <Box sx={{ display: 'flex', gap: 3, mb: 3 }}>
+                    <Box>
+                      <Typography variant="caption" color="textSecondary" gutterBottom>
+                        Registration Code
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontFamily: 'monospace', color: '#667eea' }}>
+                        {selectedStudent.registrationCode}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="textSecondary" gutterBottom>
+                        Application Number
+                      </Typography>
+                      <Typography variant="h6" sx={{ fontFamily: 'monospace' }}>
+                        {selectedStudent.applicationNo}
+                      </Typography>
+                    </Box>
+                  </Box>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
                   <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                    <PersonIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
                     Student Name
                   </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
                     {selectedStudent.name}
                   </Typography>
                 </Grid>
-                
+
                 <Grid item xs={12} md={6}>
                   <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                    <PersonIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
                     Father's Name
                   </Typography>
                   <Typography variant="body1">
                     {selectedStudent.fatherName}
                   </Typography>
                 </Grid>
-                
+
                 <Grid item xs={12} md={6}>
                   <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                    <AssignmentIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
                     Aadhaar Number
                   </Typography>
                   <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
                     {selectedStudent.aadhaarNo}
                   </Typography>
                 </Grid>
-                
+
                 <Grid item xs={12} md={6}>
                   <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                    <PhoneIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
                     Phone Number
                   </Typography>
                   <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
                     {selectedStudent.phoneNo}
                   </Typography>
                 </Grid>
-                
+
                 <Grid item xs={12} md={6}>
                   <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                    <SchoolIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
-                    School
+                    School Name
                   </Typography>
                   <Typography variant="body1">
                     {selectedStudent.schoolName}
                   </Typography>
                 </Grid>
-                
+
                 <Grid item xs={12} md={6}>
                   <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                    <SchoolIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
                     Class & Medium
                   </Typography>
                   <Typography variant="body1">
@@ -1325,85 +1608,86 @@ const AdminDashboard = () => {
 
                 <Grid item xs={12} md={6}>
                   <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                    <RoomIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
-                    Room No
+                    Gender
                   </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500, color: theme.palette.secondary.main }}>
-                    Room {selectedStudent.roomNo}
+                  <Typography variant="body1">
+                    {selectedStudent.gender}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
                   <Typography variant="subtitle2" color="textSecondary" gutterBottom>
-                    <SeatIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
-                    Seat No
+                    Room & Seat
                   </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 500, color: theme.palette.success.main }}>
-                    Seat {selectedStudent.seatNo}
+                  <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                    Room {selectedStudent.roomNo}, Seat {selectedStudent.seatNo}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12}>
-                  <Paper sx={{ p: 2, bgcolor: alpha(theme.palette.grey[100], 0.5), borderRadius: 2 }}>
-                    <Typography variant="subtitle1" color="primary" gutterBottom>
-                      <HomeIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
-                      Address Details
-                    </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12} md={6}>
-                        <Typography variant="body2" color="textSecondary">
-                          House Name
-                        </Typography>
-                        <Typography variant="body1">
-                          {selectedStudent.address.houseName}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <Typography variant="body2" color="textSecondary">
-                          Place
-                        </Typography>
-                        <Typography variant="body1">
-                          {selectedStudent.address.place}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <Typography variant="body2" color="textSecondary">
-                          Post Office
-                        </Typography>
-                        <Typography variant="body1">
-                          {selectedStudent.address.postOffice}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <Typography variant="body2" color="textSecondary">
-                          PIN Code
-                        </Typography>
-                        <Typography variant="body1">
-                          {selectedStudent.address.pinCode}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <Typography variant="body2" color="textSecondary">
-                          Local Body
-                        </Typography>
-                        <Typography variant="body1">
-                          {selectedStudent.address.localBodyName} ({selectedStudent.address.localBodyType})
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <Typography variant="body2" color="textSecondary">
-                          Village
-                        </Typography>
-                        <Typography variant="body1">
-                          {selectedStudent.address.village}
-                        </Typography>
-                      </Grid>
-                    </Grid>
-                  </Paper>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="subtitle1" color="textSecondary" gutterBottom>
+                    Address Details
+                  </Typography>
                 </Grid>
-                
+
+                <Grid item xs={12} md={6}>
+                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                    House Name
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedStudent.address?.houseName || 'N/A'}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                    Place
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedStudent.address?.place || 'N/A'}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                    Post Office
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedStudent.address?.postOffice || 'N/A'}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                    PIN Code
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedStudent.address?.pinCode || 'N/A'}
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                    Local Body
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedStudent.address?.localBodyName || 'N/A'} ({selectedStudent.address?.localBodyType || 'N/A'})
+                  </Typography>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                    Village
+                  </Typography>
+                  <Typography variant="body1">
+                    {selectedStudent.address?.village || 'N/A'}
+                  </Typography>
+                </Grid>
+
                 <Grid item xs={12}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                  <Divider sx={{ my: 2 }} />
+                  <Typography variant="body2" color="textSecondary" gutterBottom>
                     Registration Date & Time
                   </Typography>
                   <Typography variant="body1">
@@ -1413,44 +1697,76 @@ const AdminDashboard = () => {
                       year: 'numeric',
                       hour: '2-digit',
                       minute: '2-digit',
-                      second: '2-digit'
                     })}
                   </Typography>
                 </Grid>
               </Grid>
             )}
           </DialogContent>
-          <DialogActions sx={{ p: 3, borderTop: `1px solid ${theme.palette.divider}` }}>
-            <Button 
-              onClick={() => setDialogOpen(false)}
-              variant="outlined"
-            >
+          <DialogActions sx={{ p: 3, borderTop: '1px solid #e0e0e0' }}>
+            <Button onClick={() => setDialogOpen(false)} variant="outlined">
               Close
             </Button>
-            <Button 
+            <Button
               variant="contained"
               onClick={() => {
                 handleDownloadHallTicket(selectedStudent.registrationCode);
               }}
-              color="primary"
+              sx={{
+                bgcolor: '#667eea',
+                '&:hover': { bgcolor: '#5a6fd8' }
+              }}
               startIcon={<DownloadIcon />}
             >
               Download Hall Ticket
             </Button>
-            <Button 
+            <Button
               variant="contained"
               onClick={() => {
                 setDialogOpen(false);
-                handleDeleteStudent(selectedStudent._id);
+                setTimeout(() => handleDeleteStudent(selectedStudent._id), 300);
               }}
-              color="error"
+              sx={{
+                bgcolor: '#f44336',
+                '&:hover': { bgcolor: '#d32f2f' }
+              }}
               startIcon={<DeleteIcon />}
             >
               Delete Student
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* Speed Dial */}
+        <SpeedDial
+          ariaLabel="Quick Actions"
+          sx={{ position: 'fixed', bottom: 24, right: 24 }}
+          icon={<SpeedDialIcon />}
+        >
+          <SpeedDialAction
+            icon={<PrintIcon />}
+            tooltipTitle="Print"
+            tooltipOpen
+          />
+          <SpeedDialAction
+            icon={<ShareIcon />}
+            tooltipTitle="Share"
+            tooltipOpen
+          />
+          <SpeedDialAction
+            icon={<CopyIcon />}
+            tooltipTitle="Copy"
+            tooltipOpen
+          />
+        </SpeedDial>
       </Container>
+
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </Box>
   );
 };

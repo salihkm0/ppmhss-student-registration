@@ -45,7 +45,7 @@ const StudentLookup = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:5010/api/students/verify",
+        "http://13.127.187.19:5010/api/students/verify",
         {
           registrationCode: registrationCode.trim().toUpperCase(),
         },
@@ -299,7 +299,7 @@ const StudentLookup = () => {
                       startIcon={<VisibilityIcon />}
                       onClick={() =>
                         window.open(
-                          `http://localhost:5010/api/students/${student.registrationCode}/hallticket/preview`,
+                          `http://13.127.187.19:5010/api/students/${student.registrationCode}/hallticket/preview`,
                           "_blank",
                         )
                       }
@@ -313,7 +313,7 @@ const StudentLookup = () => {
                       startIcon={<DownloadIcon />}
                       onClick={() =>
                         window.open(
-                          `http://localhost:5010/api/students/${student.registrationCode}/hallticket/download`,
+                          `http://13.127.187.19:5010/api/students/${student.registrationCode}/hallticket/download`,
                           "_blank",
                         )
                       }

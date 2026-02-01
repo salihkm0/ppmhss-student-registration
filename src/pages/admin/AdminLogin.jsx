@@ -40,7 +40,7 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:5010/api/admin/login', formData);
+      const response = await axios.post('http://13.127.187.19:5010/api/admin/login', formData);
       
       if (response.data.success) {
         // Store token and admin data
