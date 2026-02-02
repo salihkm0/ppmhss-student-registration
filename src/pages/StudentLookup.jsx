@@ -49,7 +49,7 @@ const StudentLookup = () => {
     try {
       const response = await axios.post(
         // ✅ Use relative path with proxy
-        '/api/students/verify',
+        'https://ppmhss-student-registration-backend.onrender.com/api/students/verify',
         {
           registrationCode: registrationCode.trim().toUpperCase(),
         },
@@ -88,7 +88,7 @@ const StudentLookup = () => {
   const handlePreviewHallTicket = () => {
     // ✅ Use relative path with proxy
     window.open(
-      `/api/students/${student.registrationCode}/hallticket/preview`,
+      `https://ppmhss-student-registration-backend.onrender.com/api/students/${student.registrationCode}/hallticket/preview`,
       "_blank",
     );
   };
@@ -97,7 +97,7 @@ const StudentLookup = () => {
   const handleDownloadHallTicket = () => {
     // ✅ Use relative path with proxy
     window.open(
-      `/api/students/${student.registrationCode}/hallticket/download`,
+      `https://ppmhss-student-registration-backend.onrender.com/api/students/${student.registrationCode}/hallticket/download`,
       "_blank",
     );
   };
