@@ -80,14 +80,14 @@ const SuccessPage = () => {
 
   const handleDownloadHallTicket = () => {
     window.open(
-      `https://ppmhss-student-registration-backend.onrender.com/api/students/${registrationData.registrationCode}/hallticket/download`,
+      `http://13.127.187.19:5010/api/students/${registrationData.registrationCode}/hallticket/download`,
       '_blank'
     );
   };
 
   const handlePreviewHallTicket = () => {
     window.open(
-      `https://ppmhss-student-registration-backend.onrender.com/api/students/${registrationData.registrationCode}/hallticket/preview`,
+      `http://13.127.187.19:5010/api/students/${registrationData.registrationCode}/hallticket/preview`,
       '_blank'
     );
   };
