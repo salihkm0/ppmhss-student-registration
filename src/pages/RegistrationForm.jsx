@@ -12,10 +12,6 @@ import {
   Paper,
   Button,
   Box,
-  Alert,
-  Chip,
-  IconButton,
-  Tooltip,
   Card,
   CardContent,
   Divider,
@@ -23,9 +19,12 @@ import {
   InputAdornment,
   FormControl,
   FormHelperText,
-  alpha,
-  useTheme,
-  useMediaQuery,
+  Select,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -34,12 +33,7 @@ import {
   Phone as PhoneIcon,
   Email as EmailIcon,
   Assignment as AssignmentIcon,
-  Info as InfoIcon,
-  Refresh as RefreshIcon,
   LocationOn as LocationOnIcon,
-  Male as MaleIcon,
-  Female as FemaleIcon,
-  Transgender as TransgenderIcon,
   Class as ClassIcon,
   Language as LanguageIcon,
   LocalPostOffice as PostOfficeIcon,
@@ -48,11 +42,12 @@ import {
   AccountBalance as AccountBalanceIcon,
   WhatsApp as WhatsAppIcon,
   Badge as BadgeIcon,
-  ArrowBackIosNew as ArrowBackIcon,
-  ArrowForwardIos as ArrowForwardIcon,
+  ArrowBack as ArrowBackIcon,
+  ArrowForward as ArrowForwardIcon,
   CheckCircle as CheckCircleIcon,
-  HomeWork as HomeWorkIcon, // Alternative for Village
-  Public as PublicIcon, // Another alternative
+  HomeWork as HomeWorkIcon,
+  Close as CloseIcon,
+  Chat as ChatIcon,
 } from '@mui/icons-material';
 
 const RegistrationForm = () => {
@@ -61,9 +56,8 @@ const RegistrationForm = () => {
   const [nextApplicationNo, setNextApplicationNo] = useState('');
   const [nextRegistrationCode, setNextRegistrationCode] = useState('');
   const [loadingCodes, setLoadingCodes] = useState(true);
+  const [whatsappDialog, setWhatsappDialog] = useState(false);
   const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   const {
     register,
@@ -72,6 +66,7 @@ const RegistrationForm = () => {
     trigger,
     watch,
     reset,
+    setValue,
   } = useForm({
     defaultValues: {
       name: '',
@@ -94,21 +89,16 @@ const RegistrationForm = () => {
     },
   });
 
-  // Remove the apiUrl variable since we'll use relative paths with proxy
-  // const apiUrl = import.meta.env.VITE_API_URL;
-
   const steps = [
-    { title: 'Personal Info', icon: <PersonIcon /> },
-    { title: 'Academic Info', icon: <SchoolIcon /> },
-    { title: 'Contact Info', icon: <PhoneIcon /> },
+    { title: 'Personal', icon: <PersonIcon /> },
+    { title: 'Academic', icon: <SchoolIcon /> },
+    { title: 'Contact', icon: <PhoneIcon /> },
   ];
 
-  // Fetch next application number and registration code - UPDATED FUNCTION
   const fetchNextApplicationNo = async () => {
     try {
       setLoadingCodes(true);
       const [appNoResponse, regCodeResponse] = await Promise.all([
-        // ✅ Use relative paths with proxy
         axios.get('https://ppmhss-student-registration-backend.onrender.com/api/students/next-application-no'),
         axios.get('https://ppmhss-student-registration-backend.onrender.com/api/students/next-registration-code')
       ]);
@@ -122,7 +112,6 @@ const RegistrationForm = () => {
       }
     } catch (error) {
       console.error('Error fetching codes:', error);
-      // Generate fallback codes
       const year = new Date().getFullYear().toString().slice(-2);
       const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
       setNextApplicationNo(`APP${year}${month}XXXX`);
@@ -168,18 +157,15 @@ const RegistrationForm = () => {
     toast.success('Codes refreshed!');
   };
 
-  // UPDATED onSubmit function
   const onSubmit = async (data) => {
     setLoading(true);
     try {
       console.log('Submitting data:', data);
-      // ✅ Use relative path with proxy
       const response = await axios.post('https://ppmhss-student-registration-backend.onrender.com/api/students/register', data);
       
       if (response.data.success) {
         const { applicationNo, registrationCode, name } = response.data.data;
         
-        // Store in localStorage for success page
         localStorage.setItem('registrationData', JSON.stringify({
           applicationNo,
           registrationCode,
@@ -189,7 +175,6 @@ const RegistrationForm = () => {
         
         toast.success('Registration successful!');
         
-        // Refresh codes for next registration
         setTimeout(() => {
           fetchNextApplicationNo();
           reset();
@@ -212,7 +197,6 @@ const RegistrationForm = () => {
       
       toast.error(errorMessage);
       
-      // If it's a duplicate error, refresh the application number
       if (error.response?.status === 400 && error.response?.data?.error?.includes('already exists')) {
         fetchNextApplicationNo();
       }
@@ -221,13 +205,21 @@ const RegistrationForm = () => {
     }
   };
 
+  const openWhatsApp = (number) => {
+    const message = 'Hello, I need assistance with the NMEA TENDER SCHOLAR 26 registration.';
+    const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
   const renderStepContent = (step) => {
+    const gender = watch('gender');
+    
     switch (step) {
       case 0:
         return (
           <Box sx={{ width: '100%' }}>
-            <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <PersonIcon /> Personal Details
+            <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
+              Personal Details
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12}>
@@ -246,58 +238,50 @@ const RegistrationForm = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <PersonIcon color="action" />
+                        <PersonIcon fontSize="small" />
                       </InputAdornment>
                     ),
                   }}
                   variant="outlined"
-                  size={isMobile ? "small" : "medium"}
-                  sx={{ mb: 2 }}
+                  size="small"
                 />
               </Grid>
               
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <FormControl fullWidth error={!!errors.gender}>
                   <TextField
                     select
                     label="Gender *"
                     {...register('gender', { required: 'Gender is required' })}
                     variant="outlined"
-                    size={isMobile ? "small" : "medium"}
+                    size="small"
                     SelectProps={{
-                      IconComponent: () => null,
+                      native: false,
+                      MenuProps: {
+                        PaperProps: {
+                          sx: {
+                            maxHeight: 200
+                          }
+                        }
+                      }
                     }}
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          {watch('gender') === 'Male' ? (
-                            <MaleIcon color="action" />
-                          ) : watch('gender') === 'Female' ? (
-                            <FemaleIcon color="action" />
-                          ) : watch('gender') === 'Other' ? (
-                            <TransgenderIcon color="action" />
-                          ) : (
-                            <PersonIcon color="action" />
-                          )}
+                          <PersonIcon fontSize="small" />
                         </InputAdornment>
                       ),
                     }}
                   >
-                    <MenuItem value="Male" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <MaleIcon fontSize="small" /> Male
-                    </MenuItem>
-                    <MenuItem value="Female" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <FemaleIcon fontSize="small" /> Female
-                    </MenuItem>
-                    <MenuItem value="Other" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <TransgenderIcon fontSize="small" /> Other
-                    </MenuItem>
+                    <MenuItem value="Male">Male</MenuItem>
+                    <MenuItem value="Female">Female</MenuItem>
+                    <MenuItem value="Other">Other</MenuItem>
                   </TextField>
                   {errors.gender && <FormHelperText>{errors.gender.message}</FormHelperText>}
                 </FormControl>
               </Grid>
               
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <TextField
                   fullWidth
                   label="Father's Name *"
@@ -313,12 +297,12 @@ const RegistrationForm = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <PersonIcon color="action" />
+                        <PersonIcon fontSize="small" />
                       </InputAdornment>
                     ),
                   }}
                   variant="outlined"
-                  size={isMobile ? "small" : "medium"}
+                  size="small"
                 />
               </Grid>
               
@@ -338,14 +322,14 @@ const RegistrationForm = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <BadgeIcon color="action" />
+                        <BadgeIcon fontSize="small" />
                       </InputAdornment>
                     ),
                     inputProps: { maxLength: 12 },
                   }}
-                  placeholder="Enter 12-digit Aadhaar number"
+                  placeholder="12-digit Aadhaar number"
                   variant="outlined"
-                  size={isMobile ? "small" : "medium"}
+                  size="small"
                 />
               </Grid>
             </Grid>
@@ -355,8 +339,8 @@ const RegistrationForm = () => {
       case 1:
         return (
           <Box sx={{ width: '100%' }}>
-            <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <SchoolIcon /> Academic Details
+            <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
+              Academic Details
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12}>
@@ -369,55 +353,55 @@ const RegistrationForm = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SchoolIcon color="action" />
+                        <SchoolIcon fontSize="small" />
                       </InputAdornment>
                     ),
                   }}
                   variant="outlined"
-                  size={isMobile ? "small" : "medium"}
-                  sx={{ mb: 2 }}
+                  size="small"
                 />
               </Grid>
               
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <FormControl fullWidth error={!!errors.studyingClass}>
                   <TextField
+                    
                     select
                     label="Class Studying *"
                     {...register('studyingClass', { required: 'Class is required' })}
                     variant="outlined"
-                    size={isMobile ? "small" : "medium"}
+                    size="small"
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <ClassIcon color="action" />
+                          <ClassIcon fontSize="small" />
                         </InputAdornment>
                       ),
                     }}
                   >
                     <MenuItem value="7">Class 7</MenuItem>
-                    <MenuItem value="8">Class 8</MenuItem>
+                    {/* <MenuItem value="8">Class 8</MenuItem>
                     <MenuItem value="9">Class 9</MenuItem>
                     <MenuItem value="10">Class 10</MenuItem>
                     <MenuItem value="11">Class 11</MenuItem>
-                    <MenuItem value="12">Class 12</MenuItem>
+                    <MenuItem value="12">Class 12</MenuItem> */}
                   </TextField>
                   {errors.studyingClass && <FormHelperText>{errors.studyingClass.message}</FormHelperText>}
                 </FormControl>
               </Grid>
               
-              <Grid item xs={12} sm={6}>
+              <Grid item xs={12}>
                 <FormControl fullWidth error={!!errors.medium}>
                   <TextField
                     select
                     label="Medium of Instruction *"
                     {...register('medium', { required: 'Medium is required' })}
                     variant="outlined"
-                    size={isMobile ? "small" : "medium"}
+                    size="small"
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <LanguageIcon color="action" />
+                          <LanguageIcon fontSize="small" />
                         </InputAdornment>
                       ),
                     }}
@@ -435,8 +419,8 @@ const RegistrationForm = () => {
       case 2:
         return (
           <Box sx={{ width: '100%' }}>
-            <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', mb: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <PhoneIcon /> Contact Information
+            <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
+              Contact Information
             </Typography>
             <Grid container spacing={2}>
               <Grid item xs={12}>
@@ -455,15 +439,14 @@ const RegistrationForm = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <WhatsAppIcon color="action" />
+                        <PhoneIcon fontSize="small" />
                       </InputAdornment>
                     ),
                     inputProps: { maxLength: 10 },
                   }}
-                  placeholder="Enter 10-digit phone number"
+                  placeholder="10-digit phone number"
                   variant="outlined"
-                  size={isMobile ? "small" : "medium"}
-                  sx={{ mb: 2 }}
+                  size="small"
                 />
               </Grid>
               
@@ -477,12 +460,12 @@ const RegistrationForm = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <HomeIcon color="action" />
+                        <HomeIcon fontSize="small" />
                       </InputAdornment>
                     ),
                   }}
                   variant="outlined"
-                  size={isMobile ? "small" : "medium"}
+                  size="small"
                 />
               </Grid>
               
@@ -496,12 +479,12 @@ const RegistrationForm = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <LocationOnIcon color="action" />
+                        <LocationOnIcon fontSize="small" />
                       </InputAdornment>
                     ),
                   }}
                   variant="outlined"
-                  size={isMobile ? "small" : "medium"}
+                  size="small"
                 />
               </Grid>
               
@@ -515,12 +498,12 @@ const RegistrationForm = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <PostOfficeIcon color="action" />
+                        <PostOfficeIcon fontSize="small" />
                       </InputAdornment>
                     ),
                   }}
                   variant="outlined"
-                  size={isMobile ? "small" : "medium"}
+                  size="small"
                 />
               </Grid>
               
@@ -540,14 +523,14 @@ const RegistrationForm = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <PinIcon color="action" />
+                        <PinIcon fontSize="small" />
                       </InputAdornment>
                     ),
                     inputProps: { maxLength: 6 },
                   }}
                   placeholder="6-digit PIN code"
                   variant="outlined"
-                  size={isMobile ? "small" : "medium"}
+                  size="small"
                 />
               </Grid>
               
@@ -558,11 +541,11 @@ const RegistrationForm = () => {
                     label="Type of Local Body *"
                     {...register('address.localBodyType', { required: 'Local body type is required' })}
                     variant="outlined"
-                    size={isMobile ? "small" : "medium"}
+                    size="small"
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <ApartmentIcon color="action" />
+                          <ApartmentIcon fontSize="small" />
                         </InputAdornment>
                       ),
                     }}
@@ -585,7 +568,7 @@ const RegistrationForm = () => {
                   error={!!errors.address?.localBodyName}
                   helperText={errors.address?.localBodyName?.message}
                   variant="outlined"
-                  size={isMobile ? "small" : "medium"}
+                  size="small"
                 />
               </Grid>
               
@@ -599,12 +582,12 @@ const RegistrationForm = () => {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <HomeWorkIcon color="action" /> {/* Replaced Village with HomeWork */}
+                        <HomeWorkIcon fontSize="small" />
                       </InputAdornment>
                     ),
                   }}
                   variant="outlined"
-                  size={isMobile ? "small" : "medium"}
+                  size="small"
                 />
               </Grid>
             </Grid>
@@ -618,89 +601,143 @@ const RegistrationForm = () => {
 
   return (
     <Container maxWidth="md" sx={{ py: 2, px: { xs: 1, sm: 2 } }}>
-      {/* Header Section */}
-      <Card 
-        sx={{ 
-          mb: 3, 
-          borderRadius: 3,
-          background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-          color: 'white',
-        }}
+      {/* WhatsApp Support Button */}
+      <Box sx={{ position: 'fixed', bottom: 20, right: 20, zIndex: 1000 }}>
+        <Button
+          variant="contained"
+          color="success"
+          onClick={() => setWhatsappDialog(true)}
+          startIcon={<WhatsAppIcon />}
+          sx={{
+            borderRadius: 50,
+            boxShadow: 3,
+          }}
+        >
+          WhatsApp Support
+        </Button>
+      </Box>
+
+      {/* WhatsApp Dialog */}
+      <Dialog 
+        open={whatsappDialog} 
+        onClose={() => setWhatsappDialog(false)}
+        maxWidth="xs"
+        fullWidth
       >
-        <CardContent sx={{ p: 3, textAlign: 'center' }}>
-          <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 'bold' }}>
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h6">WhatsApp Support</Typography>
+          <IconButton onClick={() => setWhatsappDialog(false)} size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Contact our support team on WhatsApp for assistance:
+          </Typography>
+          
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Button
+              variant="outlined"
+              color="success"
+              startIcon={<WhatsAppIcon />}
+              onClick={() => openWhatsApp('919947073499')}
+              fullWidth
+            >
+              99470 73499
+            </Button>
+            
+            <Button
+              variant="outlined"
+              color="success"
+              startIcon={<WhatsAppIcon />}
+              onClick={() => openWhatsApp('918547645640')}
+              fullWidth
+            >
+              85476 45640
+            </Button>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setWhatsappDialog(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Header Section */}
+      <Card sx={{ mb: 3, borderRadius: 2, border: 1, borderColor: 'divider' }}>
+        <CardContent sx={{ p: 2, textAlign: 'center' }}>
+          <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
             NMEA TENDER SCHOLAR 26
           </Typography>
-          <Typography variant="h6" gutterBottom sx={{ opacity: 0.9 }}>
+          <Typography variant="subtitle1" gutterBottom sx={{ color: 'text.secondary' }}>
             Student Registration Form
           </Typography>
-          <Typography variant="body2" sx={{ opacity: 0.8 }}>
-            Fill in the details below to register for the scholarship program
+          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            PPMHSS Kottukkara, Kondotty, Malappuram
           </Typography>
         </CardContent>
       </Card>
 
-      {/* Application Codes Preview */}
-      <Card sx={{ mb: 3, borderRadius: 3, boxShadow: 2 }}>
+      {/* Application Codes */}
+      {/* <Card sx={{ mb: 3, borderRadius: 2, border: 1, borderColor: 'divider' }}>
         <CardContent sx={{ p: 2 }}>
-          <Box sx={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
-              <AssignmentIcon color="primary" />
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Next Application No
-                </Typography>
-                <Typography variant="h6" color="primary" sx={{ fontWeight: 'bold' }}>
-                  {loadingCodes ? (
-                    <CircularProgress size={16} sx={{ ml: 1 }} />
-                  ) : (
-                    nextApplicationNo
-                  )}
-                </Typography>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm={5}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <AssignmentIcon fontSize="small" color="primary" />
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Next Application No
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    {loadingCodes ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      nextApplicationNo
+                    )}
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
+            </Grid>
             
-            <Divider orientation={isMobile ? "horizontal" : "vertical"} flexItem />
-            
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
-              <BadgeIcon color="secondary" />
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Next Registration Code
-                </Typography>
-                <Typography variant="h6" color="secondary" sx={{ fontWeight: 'bold' }}>
-                  {loadingCodes ? (
-                    <CircularProgress size={16} sx={{ ml: 1 }} />
-                  ) : (
-                    nextRegistrationCode
-                  )}
-                </Typography>
+            <Grid item xs={12} sm={5}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <BadgeIcon fontSize="small" color="primary" />
+                <Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Next Registration Code
+                  </Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    {loadingCodes ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      nextRegistrationCode
+                    )}
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
+            </Grid>
             
-            <Tooltip title="Refresh codes">
-              <IconButton 
+            <Grid item xs={12} sm={2}>
+              <Button
+                size="small"
                 onClick={handleRefreshCodes}
                 disabled={loadingCodes}
-                sx={{ 
-                  bgcolor: 'primary.main', 
-                  color: 'white',
-                  '&:hover': { bgcolor: 'primary.dark' }
-                }}
+                fullWidth
+                sx={{ textTransform: 'none' }}
               >
-                <RefreshIcon />
-              </IconButton>
-            </Tooltip>
-          </Box>
+                Refresh
+              </Button>
+            </Grid>
+          </Grid>
         </CardContent>
-      </Card>
+      </Card> */}
 
-      {/* Main Form Card */}
-      <Card sx={{ borderRadius: 3, boxShadow: 3, overflow: 'visible' }}>
-        <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+      {/* Main Form */}
+      <Card sx={{ borderRadius: 2, border: 1, borderColor: 'divider', mb: 3 }}>
+        <CardContent sx={{ p: 2 }}>
           {/* Step Indicator */}
-          <Box sx={{ mb: 4, position: 'relative' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
+          <Box sx={{ mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
               {steps.map((step, index) => (
                 <Box
                   key={index}
@@ -713,40 +750,30 @@ const RegistrationForm = () => {
                 >
                   <Box
                     sx={{
-                      width: 50,
-                      height: 50,
+                      width: 36,
+                      height: 36,
                       borderRadius: '50%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       mb: 1,
-                      bgcolor: index === activeStep
-                        ? 'primary.main'
-                        : index < activeStep
-                        ? 'success.main'
-                        : alpha(theme.palette.primary.main, 0.1),
-                      color: index === activeStep
-                        ? 'white'
-                        : index < activeStep
-                        ? 'white'
-                        : 'text.secondary',
-                      border: index === activeStep ? `3px solid ${theme.palette.primary.main}` : 'none',
-                      boxShadow: index === activeStep ? 3 : 0,
+                      bgcolor: index <= activeStep ? 'primary.main' : 'action.disabledBackground',
+                      color: index <= activeStep ? 'white' : 'action.disabled',
+                      fontSize: '0.875rem',
                     }}
                   >
                     {index < activeStep ? (
-                      <CheckCircleIcon />
+                      <CheckCircleIcon fontSize="small" />
                     ) : (
-                      React.cloneElement(step.icon, { fontSize: 'medium' })
+                      React.cloneElement(step.icon, { fontSize: 'small' })
                     )}
                   </Box>
                   <Typography
                     variant="caption"
                     sx={{
-                      fontWeight: index === activeStep ? 'bold' : 'normal',
-                      color: index === activeStep ? 'primary.main' : 'text.secondary',
-                      textAlign: 'center',
-                      fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                      fontWeight: index === activeStep ? 600 : 400,
+                      color: index === activeStep ? 'text.primary' : 'text.secondary',
+                      fontSize: '0.75rem',
                     }}
                   >
                     {step.title}
@@ -754,22 +781,20 @@ const RegistrationForm = () => {
                 </Box>
               ))}
             </Box>
-            {/* Progress Line */}
             <Box
               sx={{
-                position: 'absolute',
-                top: 25,
-                left: '10%',
-                right: '10%',
-                height: 3,
-                bgcolor: alpha(theme.palette.primary.main, 0.2),
-                zIndex: 0,
+                height: 2,
+                bgcolor: 'divider',
+                position: 'relative',
               }}
             >
               <Box
                 sx={{
-                  width: `${(activeStep / (steps.length - 1)) * 100}%`,
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
                   height: '100%',
+                  width: `${(activeStep / (steps.length - 1)) * 100}%`,
                   bgcolor: 'primary.main',
                   transition: 'width 0.3s ease',
                 }}
@@ -777,25 +802,20 @@ const RegistrationForm = () => {
             </Box>
           </Box>
 
-          {/* Current Step Content */}
-          <Box sx={{ mb: 4 }}>
+          {/* Form Content */}
+          <Box sx={{ mb: 3 }}>
             {renderStepContent(activeStep)}
           </Box>
 
           {/* Navigation Buttons */}
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            gap: 2,
-            flexDirection: isMobile ? 'column-reverse' : 'row'
-          }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 1 }}>
             <Button
               variant="outlined"
               onClick={handleBack}
               disabled={activeStep === 0 || loading}
               startIcon={<ArrowBackIcon />}
-              fullWidth={isMobile}
-              size={isMobile ? "medium" : "large"}
+              size="small"
+              sx={{ minWidth: 100 }}
             >
               Back
             </Button>
@@ -805,105 +825,93 @@ const RegistrationForm = () => {
                 variant="contained"
                 onClick={handleSubmit(onSubmit)}
                 disabled={loading}
-                endIcon={loading ? <CircularProgress size={20} color="inherit" /> : null}
-                fullWidth={isMobile}
-                size={isMobile ? "medium" : "large"}
-                sx={{ 
-                  minWidth: isMobile ? '100%' : 200,
-                  py: 1.5,
-                  bgcolor: 'success.main',
-                  '&:hover': { bgcolor: 'success.dark' }
-                }}
+                endIcon={loading ? <CircularProgress size={16} color="inherit" /> : null}
+                size="small"
+                sx={{ minWidth: 150 }}
               >
-                {loading ? 'Registering...' : 'Submit Registration'}
+                {loading ? 'Submitting...' : 'Submit Registration'}
               </Button>
             ) : (
               <Button
                 variant="contained"
                 onClick={handleNext}
                 endIcon={<ArrowForwardIcon />}
-                fullWidth={isMobile}
-                size={isMobile ? "medium" : "large"}
-                sx={{ py: 1.5 }}
+                size="small"
+                sx={{ minWidth: 100 }}
               >
-                Next Step
+                Next
               </Button>
             )}
           </Box>
         </CardContent>
       </Card>
 
-      {/* Quick Actions Footer */}
-      <Box sx={{ mt: 3, textAlign: 'center' }}>
+      {/* Quick Links */}
+      <Box sx={{ mb: 3, textAlign: 'center' }}>
         <Button
-          variant="text"
+          variant="outlined"
           onClick={() => navigate('/lookup')}
           startIcon={<AssignmentIcon />}
-          size={isMobile ? "small" : "medium"}
-          sx={{ fontWeight: 'bold' }}
+          size="small"
+          sx={{ textTransform: 'none' }}
         >
           Check Registration Status
         </Button>
       </Box>
 
-      {/* Footer Information */}
-      <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: 'divider' }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} sm={4}>
-            <Box sx={{ textAlign: 'center', p: 2 }}>
-              <AccountBalanceIcon sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-              <Typography variant="subtitle1" gutterBottom fontWeight="bold" color="primary">
-                PPMHSS Kottukkara
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Kottukkara, Kondotty
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Malappuram - 673638
-              </Typography>
-            </Box>
+      {/* Contact Information */}
+      <Card sx={{ borderRadius: 2, border: 1, borderColor: 'divider' }}>
+        <CardContent sx={{ p: 2 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={4}>
+              <Box sx={{ textAlign: 'center' }}>
+                <AccountBalanceIcon sx={{ fontSize: 24, mb: 1, color: 'text.secondary' }} />
+                <Typography variant="body2" fontWeight={500} gutterBottom>
+                  PPMHSS Kottukkara
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Kottukkara, Kondotty
+                </Typography>
+              </Box>
+            </Grid>
+            
+            <Grid item xs={12} sm={4}>
+              <Box sx={{ textAlign: 'center' }}>
+                <PhoneIcon sx={{ fontSize: 24, mb: 1, color: 'text.secondary' }} />
+                <Typography variant="body2" fontWeight={500} gutterBottom>
+                  Contact
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  0483 2711374
+                </Typography>
+              </Box>
+            </Grid>
+            
+            <Grid item xs={12} sm={4}>
+              <Box sx={{ textAlign: 'center' }}>
+                <EmailIcon sx={{ fontSize: 24, mb: 1, color: 'text.secondary' }} />
+                <Typography variant="body2" fontWeight={500} gutterBottom>
+                  Email
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  ppmhss@gmail.com
+                </Typography>
+              </Box>
+            </Grid>
           </Grid>
           
-          <Grid item xs={12} sm={4}>
-            <Box sx={{ textAlign: 'center', p: 2 }}>
-              <PhoneIcon sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-              <Typography variant="subtitle1" gutterBottom fontWeight="bold" color="primary">
-                Contact Us
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                +91 483 2711374
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                +91 483 2714174
-              </Typography>
-            </Box>
-          </Grid>
+          <Divider sx={{ my: 2 }} />
           
-          <Grid item xs={12} sm={4}>
-            <Box sx={{ textAlign: 'center', p: 2 }}>
-              <EmailIcon sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-              <Typography variant="subtitle1" gutterBottom fontWeight="bold" color="primary">
-                Email & Support
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                ppmhss@gmail.com
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Tech: +91 81570 24638
-              </Typography>
-            </Box>
-          </Grid>
-        </Grid>
-        
-        <Box sx={{ mt: 3, pt: 2, borderTop: 1, borderColor: 'divider', textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            Developed by <strong>Muhammed Salih KM</strong> | +91 81570 24638
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-            © {new Date().getFullYear()} PPMHSS Kottukkara. All rights reserved.
-          </Typography>
-        </Box>
-      </Box>
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="caption" color="text.secondary">
+              Developed by <strong>Muhammed Salih KM</strong> | 81570 24638
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+              © {new Date().getFullYear()} PPMHSS Kottukkara
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
     </Container>
   );
 };

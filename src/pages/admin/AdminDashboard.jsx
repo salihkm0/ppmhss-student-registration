@@ -40,10 +40,6 @@ import {
   Divider,
   Fade,
   Stack,
-  SpeedDial,
-  SpeedDialAction,
-  SpeedDialIcon,
-  Fab,
 } from "@mui/material";
 import {
   Dashboard as DashboardIcon,
@@ -382,6 +378,35 @@ const AdminDashboard = () => {
     }
   };
 
+  // 21-Slip Exam Sheet Function
+  const handleDownloadExamSlips21 = async (roomNo) => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const url = `https://ppmhss-student-registration-backend.onrender.com/api/admin/simple-exam-slips/${roomNo}?preview=false&print=true`;
+      
+      window.open(url, '_blank');
+      toast.success(`Exam slips for Room ${roomNo} opened for printing`);
+      
+    } catch (error) {
+      console.error('Error downloading exam slips:', error);
+      toast.error('Failed to generate exam slips');
+    }
+  };
+
+  const handleDownloadAllExamSlips21 = async () => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      const url = `https://ppmhss-student-registration-backend.onrender.com/api/admin/simple-exam-slips?all=true&preview=false&print=true`;
+      
+      window.open(url, '_blank');
+      toast.success(`All exam slips opened for printing`);
+      
+    } catch (error) {
+      console.error('Error downloading all exam slips:', error);
+      toast.error('Failed to generate exam slips');
+    }
+  };
+
   const handleViewDetails = (student) => {
     setSelectedStudent(student);
     setDialogOpen(true);
@@ -629,7 +654,31 @@ const AdminDashboard = () => {
                   }
                 }}
               >
-                {downloadingRoom === room._id ? 'Downloading...' : 'Download Sheet'}
+                {downloadingRoom === room._id ? 'Downloading...' : 'Attendance Sheet'}
+              </Button>
+              
+              {/* 21-Slip Exam Sheet Button */}
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<BadgeIcon />}
+                onClick={() => handleDownloadExamSlips21(room._id)}
+                fullWidth
+                sx={{
+                  borderColor: '#4caf50',
+                  color: '#4caf50',
+                  borderRadius: 1.5,
+                  py: 0.75,
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: '#388e3c',
+                    color: '#388e3c',
+                    bgcolor: alpha('#4caf50', 0.04),
+                  }
+                }}
+              >
+                21-Slip Exam Sheet
               </Button>
             </Stack>
           </CardContent>
@@ -927,100 +976,100 @@ const AdminDashboard = () => {
                 </Paper>
               </Grid>
               <Grid item xs={12} lg={4}>
-  <Paper
-    sx={{
-      p: 3,
-      borderRadius: 2,
-      background: 'white',
-      border: '1px solid #e0e0e0',
-      boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
-      height: '100%',
-    }}
-  >
-    <Box sx={{ mb: 3 }}>
-      <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
-        Gender Distribution
-      </Typography>
-      <Typography variant="body2" color="text.secondary">
-        Student gender distribution
-      </Typography>
-    </Box>
-    <Box sx={{ height: 250, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      {stats?.stats.gender && stats.stats.gender.length > 0 ? (
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={stats.stats.gender}
-            margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis 
-              dataKey="_id" 
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#666', fontSize: 12 }}
-            />
-            <YAxis 
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: '#666', fontSize: 12 }}
-            />
-            <RechartsTooltip 
-              formatter={(value) => [`${value} students`, 'Count']}
-              labelFormatter={(label) => `${label}`}
-              contentStyle={{
-                borderRadius: 6,
-                border: '1px solid #e0e0e0',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                background: 'white',
-              }}
-            />
-            <Bar
-              dataKey="count"
-              name="Students"
-              fill="#667eea"
-              radius={[4, 4, 0, 0]}
-              maxBarSize={40}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      ) : (
-        <Box sx={{ textAlign: 'center', color: 'text.secondary' }}>
-          <PeopleIcon sx={{ fontSize: 60, opacity: 0.3, mb: 2 }} />
-          <Typography>No gender data available</Typography>
-        </Box>
-      )}
-    </Box>
-    {/* Add summary below the chart */}
-    {stats?.stats.gender && stats.stats.gender.length > 0 && (
-      <Box sx={{ mt: 2, pt: 2, borderTop: '1px dashed #e0e0e0' }}>
-        <Grid container spacing={1}>
-          {stats.stats.gender.map((item, index) => (
-            <Grid item xs={6} key={index}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2" color="text.secondary">
-                  {item._id}:
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  {item.count}
-                </Typography>
-              </Box>
-            </Grid>
-          ))}
-          <Grid item xs={12}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                Total:
-              </Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {stats.stats.gender.reduce((sum, item) => sum + item.count, 0)}
-              </Typography>
-            </Box>
-          </Grid>
-        </Grid>
-      </Box>
-    )}
-  </Paper>
-</Grid>
+                <Paper
+                  sx={{
+                    p: 3,
+                    borderRadius: 2,
+                    background: 'white',
+                    border: '1px solid #e0e0e0',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+                    height: '100%',
+                  }}
+                >
+                  <Box sx={{ mb: 3 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+                      Gender Distribution
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Student gender distribution
+                    </Typography>
+                  </Box>
+                  <Box sx={{ height: 250, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {stats?.stats.gender && stats.stats.gender.length > 0 ? (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={stats.stats.gender}
+                          margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                          <XAxis 
+                            dataKey="_id" 
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#666', fontSize: 12 }}
+                          />
+                          <YAxis 
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#666', fontSize: 12 }}
+                          />
+                          <RechartsTooltip 
+                            formatter={(value) => [`${value} students`, 'Count']}
+                            labelFormatter={(label) => `${label}`}
+                            contentStyle={{
+                              borderRadius: 6,
+                              border: '1px solid #e0e0e0',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                              background: 'white',
+                            }}
+                          />
+                          <Bar
+                            dataKey="count"
+                            name="Students"
+                            fill="#667eea"
+                            radius={[4, 4, 0, 0]}
+                            maxBarSize={40}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <Box sx={{ textAlign: 'center', color: 'text.secondary' }}>
+                        <PeopleIcon sx={{ fontSize: 60, opacity: 0.3, mb: 2 }} />
+                        <Typography>No gender data available</Typography>
+                      </Box>
+                    )}
+                  </Box>
+                  {/* Add summary below the chart */}
+                  {stats?.stats.gender && stats.stats.gender.length > 0 && (
+                    <Box sx={{ mt: 2, pt: 2, borderTop: '1px dashed #e0e0e0' }}>
+                      <Grid container spacing={1}>
+                        {stats.stats.gender.map((item, index) => (
+                          <Grid item xs={6} key={index}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <Typography variant="body2" color="text.secondary">
+                                {item._id}:
+                              </Typography>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {item.count}
+                              </Typography>
+                            </Box>
+                          </Grid>
+                        ))}
+                        <Grid item xs={12}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+                            <Typography variant="body2" color="text.secondary">
+                              Total:
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {stats.stats.gender.reduce((sum, item) => sum + item.count, 0)}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  )}
+                </Paper>
+              </Grid>
             </Grid>
 
             {/* Recent Activity */}
@@ -1134,19 +1183,23 @@ const AdminDashboard = () => {
                   </Box>
                   <Box sx={{ display: 'flex', gap: 2 }}>
                     <Tooltip title="Export All Data">
-                      <Fab
-                        size="small"
+                      <Button
+                        variant="contained"
+                        startIcon={<CloudDownloadIcon />}
                         onClick={handleExport}
                         sx={{
                           bgcolor: '#4caf50',
                           color: 'white',
+                          borderRadius: 1.5,
+                          textTransform: 'none',
+                          fontWeight: 600,
                           '&:hover': {
                             bgcolor: '#388e3c',
                           }
                         }}
                       >
-                        <CloudDownloadIcon />
-                      </Fab>
+                        Export Data
+                      </Button>
                     </Tooltip>
                   </Box>
                 </Box>
@@ -1480,7 +1533,7 @@ const AdminDashboard = () => {
                     Monitor and manage room allocations
                   </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                   <Chip
                     icon={<PeopleIcon />}
                     label={`${totalStudents} Students`}
@@ -1491,6 +1544,24 @@ const AdminDashboard = () => {
                     label={`${stats?.stats.rooms?.length || 0} Rooms`}
                     sx={{ fontWeight: 600 }}
                   />
+                  <Button
+                    variant="contained"
+                    startIcon={<PrintIcon />}
+                    onClick={handleDownloadAllExamSlips21}
+                    sx={{
+                      bgcolor: '#4caf50',
+                      color: 'white',
+                      borderRadius: 1.5,
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      px: 3,
+                      '&:hover': {
+                        bgcolor: '#388e3c',
+                      }
+                    }}
+                  >
+                    Print All Exam Slips
+                  </Button>
                 </Box>
               </Box>
 
@@ -1677,7 +1748,7 @@ const AdminDashboard = () => {
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                  <Typography variant="body2" color="text-secondary" gutterBottom>
                     Village
                   </Typography>
                   <Typography variant="body1">
@@ -1736,29 +1807,6 @@ const AdminDashboard = () => {
             </Button>
           </DialogActions>
         </Dialog>
-
-        {/* Speed Dial */}
-        <SpeedDial
-          ariaLabel="Quick Actions"
-          sx={{ position: 'fixed', bottom: 24, right: 24 }}
-          icon={<SpeedDialIcon />}
-        >
-          <SpeedDialAction
-            icon={<PrintIcon />}
-            tooltipTitle="Print"
-            tooltipOpen
-          />
-          <SpeedDialAction
-            icon={<ShareIcon />}
-            tooltipTitle="Share"
-            tooltipOpen
-          />
-          <SpeedDialAction
-            icon={<CopyIcon />}
-            tooltipTitle="Copy"
-            tooltipOpen
-          />
-        </SpeedDial>
       </Container>
 
       <style jsx>{`
