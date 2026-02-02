@@ -12,6 +12,7 @@ import {
   Alert,
   CircularProgress,
   Chip,
+  Divider,
 } from "@mui/material";
 import {
   Search as SearchIcon,
@@ -23,6 +24,8 @@ import {
   EventSeat as SeatIcon,
   Visibility as VisibilityIcon,
   Download as DownloadIcon,
+  AccountBalance as AccountBalanceIcon,
+  Email as EmailIcon,
 } from "@mui/icons-material";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -32,9 +35,6 @@ const StudentLookup = () => {
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // Remove the apiUrl variable since we'll use relative paths with proxy
-  // const apiUrl = import.meta.env.VITE_API_URL;
 
   const handleSearch = async () => {
     if (!registrationCode.trim()) {
@@ -48,8 +48,7 @@ const StudentLookup = () => {
 
     try {
       const response = await axios.post(
-        // ✅ Use relative path with proxy
-        'https://ppmhss-student-registration-backend.onrender.com/api/students/verify',
+        'https://apinmea.oxiumev.com/api/students/verify',
         {
           registrationCode: registrationCode.trim().toUpperCase(),
         },
@@ -76,7 +75,6 @@ const StudentLookup = () => {
     }
   };
 
-  // Function to get room status chip color
   const getRoomStatusColor = (roomNo, seatNo) => {
     if (roomNo && seatNo) {
       return "success";
@@ -84,27 +82,23 @@ const StudentLookup = () => {
     return "default";
   };
 
-  // Function to handle hall ticket preview
   const handlePreviewHallTicket = () => {
-    // ✅ Use relative path with proxy
     window.open(
-      `https://ppmhss-student-registration-backend.onrender.com/api/students/${student.registrationCode}/hallticket/preview`,
+      `https://apinmea.oxiumev.com/api/students/${student.registrationCode}/hallticket/preview`,
       "_blank",
     );
   };
 
-  // Function to handle hall ticket download
   const handleDownloadHallTicket = () => {
-    // ✅ Use relative path with proxy
     window.open(
-      `https://ppmhss-student-registration-backend.onrender.com/api/students/${student.registrationCode}/hallticket/download`,
+      `https://apinmea.oxiumev.com/api/students/${student.registrationCode}/hallticket/download`,
       "_blank",
     );
   };
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, borderRadius: 3 }}>
+      <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, borderRadius: 3, mb: 3 }}>
         <Box sx={{ textAlign: "center", mb: 4 }}>
           <AssignmentIcon sx={{ fontSize: 60, color: "primary.main", mb: 2 }} />
           <Typography variant="h4" component="h1" gutterBottom>
@@ -118,7 +112,7 @@ const StudentLookup = () => {
         <Box sx={{ mb: 4 }}>
           <TextField
             fullWidth
-            label="Registration Code"
+            label="Registration No."
             value={registrationCode}
             onChange={(e) => setRegistrationCode(e.target.value)}
             onKeyPress={handleKeyPress}
@@ -175,7 +169,7 @@ const StudentLookup = () => {
                     <AssignmentIcon sx={{ mr: 1, color: "action.active" }} />
                     <Box>
                       <Typography variant="body2" color="textSecondary">
-                        Registration Code
+                        Registration No.
                       </Typography>
                       <Typography
                         variant="body1"
@@ -188,7 +182,7 @@ const StudentLookup = () => {
                   </Box>
                 </Grid>
                 
-                <Grid item xs={12} md={6}>
+                {/* <Grid item xs={12} md={6}>
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="body2" color="textSecondary">
                       Application Number
@@ -197,7 +191,7 @@ const StudentLookup = () => {
                       {student.applicationNo}
                     </Typography>
                   </Box>
-                </Grid>
+                </Grid> */}
                 
                 <Grid item xs={12} md={6}>
                   <Box sx={{ mb: 2 }}>
@@ -214,7 +208,6 @@ const StudentLookup = () => {
                   </Box>
                 </Grid>
                 
-                {/* Room and Seat Information */}
                 <Grid item xs={12} md={6}>
                   <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                     <RoomIcon sx={{ mr: 1, color: "action.active" }} />
@@ -229,7 +222,7 @@ const StudentLookup = () => {
                   </Box>
                 </Grid>
                 
-                <Grid item xs={12} md={6}>
+                {/* <Grid item xs={12} md={6}>
                   <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                     <SeatIcon sx={{ mr: 1, color: "action.active" }} />
                     <Box>
@@ -241,7 +234,7 @@ const StudentLookup = () => {
                       </Typography>
                     </Box>
                   </Box>
-                </Grid>
+                </Grid> */}
                 
                 <Grid item xs={12} md={6}>
                   <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
@@ -288,6 +281,15 @@ const StudentLookup = () => {
                 </Grid>
                 
                 <Grid item xs={12}>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="textSecondary">
+                      Exam Date & Time
+                    </Typography>
+                    <Typography variant="body1">01-03-2026 10:00 AM</Typography>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12}>
                   <Box
                     sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: "divider" }}
                   >
@@ -306,7 +308,6 @@ const StudentLookup = () => {
                   </Box>
                 </Grid>
                 
-                {/* Hall Ticket Download Buttons */}
                 <Grid item xs={12}>
                   <Box
                     sx={{
@@ -323,7 +324,7 @@ const StudentLookup = () => {
                       startIcon={<VisibilityIcon />}
                       onClick={handlePreviewHallTicket}
                       size="large"
-                      sx={{ display: 'none' }} // Hidden for now
+                      sx={{ display: 'none' }}
                     >
                       Preview Hall Ticket
                     </Button>
@@ -339,8 +340,7 @@ const StudentLookup = () => {
                   </Box>
                 </Grid>
                 
-                {/* Important Note */}
-                <Grid item xs={12}>
+                {/* <Grid item xs={12}>
                   <Alert severity="info" sx={{ mt: 2 }}>
                     <Typography variant="body2">
                       <strong>Important:</strong> 
@@ -350,7 +350,7 @@ const StudentLookup = () => {
                       }
                     </Typography>
                   </Alert>
-                </Grid>
+                </Grid> */}
               </Grid>
             </CardContent>
           </Card>
@@ -365,6 +365,60 @@ const StudentLookup = () => {
           </Typography>
         </Box>
       </Paper>
+
+      {/* Footer with Contact Information */}
+      <Card sx={{ borderRadius: 2, border: 1, borderColor: 'divider' }}>
+        <CardContent sx={{ p: 2 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={4}>
+              <Box sx={{ textAlign: 'center' }}>
+                <AccountBalanceIcon sx={{ fontSize: 24, mb: 1, color: 'text.secondary' }} />
+                <Typography variant="body2" fontWeight={500} gutterBottom>
+                  PPMHSS Kottukkara
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Kottukkara, Kondotty
+                </Typography>
+              </Box>
+            </Grid>
+            
+            <Grid item xs={12} sm={4}>
+              <Box sx={{ textAlign: 'center' }}>
+                <PhoneIcon sx={{ fontSize: 24, mb: 1, color: 'text.secondary' }} />
+                <Typography variant="body2" fontWeight={500} gutterBottom>
+                  Contact
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  +91 9947073499, +91 8547645640
+                </Typography>
+              </Box>
+            </Grid>
+            
+            <Grid item xs={12} sm={4}>
+              <Box sx={{ textAlign: 'center' }}>
+                <EmailIcon sx={{ fontSize: 24, mb: 1, color: 'text.secondary' }} />
+                <Typography variant="body2" fontWeight={500} gutterBottom>
+                  Email
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  ppmhss@gmail.com
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+          
+          <Divider sx={{ my: 2 }} />
+          
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="caption" color="text.secondary">
+              Developed by <strong>Muhammed Salih KM</strong> | 81570 24638
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+              © {new Date().getFullYear()} PPMHSS Kottukkara
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
     </Container>
   );
 };

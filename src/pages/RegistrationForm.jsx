@@ -99,8 +99,8 @@ const RegistrationForm = () => {
     try {
       setLoadingCodes(true);
       const [appNoResponse, regCodeResponse] = await Promise.all([
-        axios.get('https://ppmhss-student-registration-backend.onrender.com/api/students/next-application-no'),
-        axios.get('https://ppmhss-student-registration-backend.onrender.com/api/students/next-registration-code')
+        axios.get('https://apinmea.oxiumev.com/api/students/next-application-no'),
+        axios.get('https://apinmea.oxiumev.com/api/students/next-registration-code')
       ]);
       
       if (appNoResponse.data.success) {
@@ -161,7 +161,7 @@ const RegistrationForm = () => {
     setLoading(true);
     try {
       console.log('Submitting data:', data);
-      const response = await axios.post('https://ppmhss-student-registration-backend.onrender.com/api/students/register', data);
+      const response = await axios.post('https://apinmea.oxiumev.com/api/students/register', data);
       
       if (response.data.success) {
         const { applicationNo, registrationCode, name } = response.data.data;
@@ -882,7 +882,7 @@ const RegistrationForm = () => {
                   Contact
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  0483 2711374
+                  +91 9947073499, +91 8547645640
                 </Typography>
               </Box>
             </Grid>
