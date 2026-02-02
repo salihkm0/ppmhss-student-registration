@@ -139,7 +139,7 @@ const AdminDashboard = () => {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await axios.get(
-        "http://13.127.187.19:5010/api/admin/dashboard/stats",
+        "https://ppmhss-student-registration-backend.onrender.com/api/admin/dashboard/stats",
         {
           headers: { "x-auth-token": token },
         },
@@ -222,7 +222,7 @@ const AdminDashboard = () => {
       };
 
       const response = await axios.get(
-        "http://13.127.187.19:5010/api/admin/students",
+        "https://ppmhss-student-registration-backend.onrender.com/api/admin/students",
         {
           headers: { "x-auth-token": token },
           params,
@@ -254,7 +254,7 @@ const AdminDashboard = () => {
     try {
       const token = localStorage.getItem('adminToken');
       const response = await axios.get(
-        'http://13.127.187.19:5010/api/admin/export',
+        'https://ppmhss-student-registration-backend.onrender.com/api/admin/export',
         {
           headers: { 'x-auth-token': token },
           responseType: 'blob'
@@ -304,7 +304,7 @@ const AdminDashboard = () => {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await axios.delete(
-        `http://13.127.187.19:5010/api/admin/students/${studentId}`,
+        `https://ppmhss-student-registration-backend.onrender.com/api/admin/students/${studentId}`,
         {
           headers: { "x-auth-token": token },
         },
@@ -323,7 +323,7 @@ const AdminDashboard = () => {
 
   const handleDownloadHallTicket = (registrationCode) => {
     window.open(
-      `http://13.127.187.19:5010/api/students/${registrationCode}/hallticket/download`,
+      `https://ppmhss-student-registration-backend.onrender.com/api/students/${registrationCode}/hallticket/download`,
       "_blank",
     );
   };
@@ -341,7 +341,7 @@ const AdminDashboard = () => {
       }
 
       const response = await axios.get(
-        `http://13.127.187.19:5010/api/admin/room-attendance/${roomNo}/pdf`,
+        `https://ppmhss-student-registration-backend.onrender.com/api/admin/room-attendance/${roomNo}/pdf`,
         {
           headers: {
             'x-auth-token': token,
@@ -374,7 +374,7 @@ const AdminDashboard = () => {
       } else {
         toast.error('Failed to generate attendance sheet');
         const token = localStorage.getItem('adminToken');
-        const url = `http://13.127.187.19:5010/api/admin/room-attendance/${roomNo}/pdf`;
+        const url = `https://ppmhss-student-registration-backend.onrender.com/api/admin/room-attendance/${roomNo}/pdf`;
         window.open(url, '_blank');
       }
     } finally {
