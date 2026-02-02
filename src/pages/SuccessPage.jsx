@@ -36,6 +36,9 @@ const SuccessPage = () => {
   const [registrationData, setRegistrationData] = useState(null);
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
+  // Remove the apiUrl variable since we'll use relative paths with proxy
+  // const apiUrl = import.meta.env.VITE_API_URL;
+
   useEffect(() => {
     const data = localStorage.getItem('registrationData');
     if (!data) {
@@ -69,25 +72,25 @@ const SuccessPage = () => {
 📝 Application No: ${registrationData.applicationNo}
 🔑 Registration Code: ${registrationData.registrationCode}
 👤 Name: ${registrationData.name}
-🚪 Room No: ${registrationData.roomNo}
-💺 Seat No: ${registrationData.seatNo}
-🏫 Class: ${registrationData.studyingClass}
-📞 Phone: ${registrationData.phoneNo}`;
+🏫 Class: ${registrationData.studyingClass || 'Not specified'}
+📞 Phone: ${registrationData.phoneNo || 'Not specified'}`;
     
     const encodedMessage = encodeURIComponent(message);
     window.open(`https://wa.me/?text=${encodedMessage}`, '_blank');
   };
 
   const handleDownloadHallTicket = () => {
+    // ✅ Use relative path with proxy
     window.open(
-      `http://13.127.187.19:5010/api/students/${registrationData.registrationCode}/hallticket/download`,
+      `/api/students/${registrationData.registrationCode}/hallticket/download`,
       '_blank'
     );
   };
 
   const handlePreviewHallTicket = () => {
+    // ✅ Use relative path with proxy
     window.open(
-      `http://13.127.187.19:5010/api/students/${registrationData.registrationCode}/hallticket/preview`,
+      `/api/students/${registrationData.registrationCode}/hallticket/preview`,
       '_blank'
     );
   };
@@ -111,7 +114,7 @@ const SuccessPage = () => {
 
         <Alert severity="success" sx={{ mb: 3 }}>
           <Typography variant="body2">
-            ✅ Your seat has been allocated. Please note your Room No for the examination.
+            ✅ Your registration is complete. Hall ticket will be available for download once room allocation is done.
           </Typography>
         </Alert>
 
@@ -220,7 +223,21 @@ const SuccessPage = () => {
             Hall Ticket & Actions
           </Typography>
           
-          <Grid container spacing={2}>            
+          <Grid container spacing={2}>
+            {/* Preview Hall Ticket Button - Hidden for now */}
+            <Grid item xs={12} md={6} sx={{ display: 'none' }}>
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={<PrintIcon />}
+                onClick={handlePreviewHallTicket}
+                fullWidth
+                size="large"
+              >
+                Preview Hall Ticket
+              </Button>
+            </Grid>
+            
             <Grid item xs={12} md={6}>
               <Button
                 variant="contained"
@@ -261,14 +278,15 @@ const SuccessPage = () => {
         </Box>
 
         {/* Important Instructions */}
-        <Alert severity="warning" sx={{ mb: 3 }}>
+        <Alert severity="info" sx={{ mb: 3 }}>
           <Typography variant="body2">
             <strong>Important Instructions:</strong>
             <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
               <li>Save your Registration Code: <strong>{registrationData.registrationCode}</strong></li>
-              <li>You must report to <strong>Room {registrationData.roomNo}</strong> at <strong>Seat {registrationData.seatNo}</strong></li>
-              <li>Bring original Aadhaar card and this hall ticket</li>
-              <li>Report 30 minutes before exam time (09:30 AM)</li>
+              <li>Use your registration code to check your status anytime</li>
+              <li>Room and seat allocation will be updated later</li>
+              <li>Bring original Aadhaar card and hall ticket to exam</li>
+              <li>Report 30 minutes before exam time</li>
             </ul>
           </Typography>
         </Alert>
