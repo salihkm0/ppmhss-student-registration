@@ -83,7 +83,7 @@ const SuccessPage = () => {
     try {
       setLoadingDetails(true);
       const response = await axios.get(
-        `https://ppmhss-student-registration-backend.onrender.com/api/students/${registrationCode}`
+        `https://apinmea.oxiumev.com/api/students/${registrationCode}`
       );
       
       if (response.data.success) {
@@ -113,12 +113,12 @@ const SuccessPage = () => {
   const handleWhatsApp = () => {
     if (!registrationData) return;
     
-    const hallTicketLink = `https://ppmhss-student-registration-backend.onrender.com/api/students/${registrationData.registrationCode}/hallticket/download`;
+    const hallTicketLink = `https://apinmea.oxiumev.com/api/students/${registrationData.registrationCode}/hallticket/download`;
     
     let message = `📋 *NMEA TENDER SCHOLAR 26 - Registration Details*\n\n`;
     message += `👤 *Name:* ${registrationData.name}\n`;
-    message += `📝 *Application No:* ${registrationData.applicationNo}\n`;
-    message += `🔑 *Registration Code:* ${registrationData.registrationCode}\n`;
+    // message += `📝 *Application No:* ${registrationData.applicationNo}\n`;
+    message += `🔑 *Registration No.:* ${registrationData.registrationCode}\n`;
     
     if (studentDetails) {
       if (studentDetails.fatherName) {
@@ -146,7 +146,7 @@ const SuccessPage = () => {
     if (!registrationData) return;
     
     window.open(
-      `https://ppmhss-student-registration-backend.onrender.com/api/students/${registrationData.registrationCode}/hallticket/download`,
+      `https://apinmea.oxiumev.com/api/students/${registrationData.registrationCode}/hallticket/download`,
       '_blank'
     );
   };
@@ -283,7 +283,7 @@ const SuccessPage = () => {
             }}
           >
             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-              Registration number must be written down. (രെജിസ്ട്രേഷൻ നമ്പർ നിർബന്ധമായും എഴുതി വെക്കേണ്ടതാണ്)
+              You must write down the registration number. (രെജിസ്ട്രേഷൻ നമ്പർ നിർബന്ധമായും എഴുതി വെക്കേണ്ടതാണ്)
             </Typography>
           </Alert>
         )}
@@ -313,7 +313,7 @@ const SuccessPage = () => {
 
                 {/* Registration Codes */}
                 <Grid container spacing={2} sx={{ mb: 3 }}>
-                  <Grid item xs={12} md={6}>
+                  {/* <Grid item xs={12} md={6}>
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="body2" color="textSecondary" gutterBottom>
                         Application Number
@@ -339,12 +339,12 @@ const SuccessPage = () => {
                         </IconButton>
                       </Box>
                     </Box>
-                  </Grid>
+                  </Grid> */}
                   
                   <Grid item xs={12} md={6}>
                     <Box sx={{ mb: 2 }}>
                       <Typography variant="body2" color="textSecondary" gutterBottom>
-                        Registration Code
+                        Registration No.
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Typography variant="body1" sx={{ 
@@ -501,8 +501,8 @@ const SuccessPage = () => {
           <Typography variant="body2">
             <strong>Important Instructions:</strong>
             <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
-              <li>Save your Registration Code: <strong>{registrationData.registrationCode || 'N/A'}</strong></li>
-              <li>Use your registration code to check your status anytime</li>
+              <li>Save your Registration No.: <strong>{registrationData.registrationCode || 'N/A'}</strong></li>
+              <li>Use your registration Number to check your status anytime</li>
               <li>Your room and seat are allocated</li>
               <li>Bring original Aadhaar card and hall ticket to exam</li>
               <li>Report 30 minutes before exam time</li>
@@ -540,7 +540,7 @@ const SuccessPage = () => {
                 Contact
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                +91 483 2711374, +91 483 2714174
+                +91 9947073499, +91 8547645640
               </Typography>
             </Box>
           </Grid>

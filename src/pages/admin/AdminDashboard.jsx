@@ -40,6 +40,8 @@ import {
   Divider,
   Fade,
   Stack,
+  Fab,
+  Alert, // Added for floating action button
 } from "@mui/material";
 import {
   Dashboard as DashboardIcon,
@@ -86,6 +88,9 @@ import {
   Map as MapIcon,
   AccountBalance as AccountBalanceIcon,
   CreditCard as CreditCardIcon,
+  WhatsApp as WhatsAppIcon, // Added WhatsApp icon
+  SupportAgent as SupportIcon, // Added Support icon
+  Message as MessageIcon, // Added Message icon
 } from "@mui/icons-material";
 import {
   BarChart,
@@ -122,9 +127,20 @@ const AdminDashboard = () => {
   const [roomChartData, setRoomChartData] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
   const [downloadingRoom, setDownloadingRoom] = useState(null);
+  const [whatsappDialogOpen, setWhatsappDialogOpen] = useState(false); // State for WhatsApp dialog
+
+  const DEVELOPER_WHATSAPP_NUMBER = "8157024638";
+  const DEVELOPER_NAME = "Muhammed Salih KM";
 
   // Simple, professional color scheme
-  const COLORS = ["#667eea", "#4caf50", "#ff9800", "#9c27b0", "#2196f3", "#f44336"];
+  const COLORS = [
+    "#667eea",
+    "#4caf50",
+    "#ff9800",
+    "#9c27b0",
+    "#2196f3",
+    "#f44336",
+  ];
 
   useEffect(() => {
     fetchDashboardData();
@@ -135,7 +151,7 @@ const AdminDashboard = () => {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await axios.get(
-        "https://ppmhss-student-registration-backend.onrender.com/api/admin/dashboard/stats",
+        "https://apinmea.oxiumev.com/api/admin/dashboard/stats",
         {
           headers: { "x-auth-token": token },
         },
@@ -171,17 +187,42 @@ const AdminDashboard = () => {
     }
   };
 
+  // WhatsApp message functions
+  const handleOpenWhatsApp = () => {
+    const message = `Hello ${DEVELOPER_NAME}, I need assistance with the PPMHSS Admin Dashboard.`;
+    const whatsappUrl = `https://wa.me/${DEVELOPER_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, "_blank");
+  };
+
+  const handleOpenWhatsAppDialog = () => {
+    setWhatsappDialogOpen(true);
+  };
+
+  const handleCloseWhatsAppDialog = () => {
+    setWhatsappDialogOpen(false);
+  };
+
+  const handleSendWhatsAppMessage = (customMessage = "") => {
+    const message =
+      customMessage ||
+      `Hello ${DEVELOPER_NAME}, I need assistance with the PPMHSS Admin Dashboard.`;
+    const whatsappUrl = `https://wa.me/${DEVELOPER_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, "_blank");
+    setWhatsappDialogOpen(false);
+  };
+
   const calculateQuickStats = () => {
-    if (!stats || !stats.recent) return { todayRegistrations: 0, avgRegistrations: 0, completionRate: 92 };
+    if (!stats || !stats.recent)
+      return { todayRegistrations: 0, avgRegistrations: 0, completionRate: 92 };
 
     const todayRegistrations = stats.recent.filter(
-      (s) => new Date(s.createdAt).toDateString() === new Date().toDateString()
+      (s) => new Date(s.createdAt).toDateString() === new Date().toDateString(),
     ).length;
 
     return {
       todayRegistrations,
       avgRegistrations: Math.round(todayRegistrations),
-      completionRate: Math.min(100, Math.round((totalStudents / 500) * 100)) // Assuming 500 max capacity
+      completionRate: Math.min(100, Math.round((totalStudents / 500) * 100)), // Assuming 500 max capacity
     };
   };
 
@@ -218,7 +259,7 @@ const AdminDashboard = () => {
       };
 
       const response = await axios.get(
-        "https://ppmhss-student-registration-backend.onrender.com/api/admin/students",
+        "https://apinmea.oxiumev.com/api/admin/students",
         {
           headers: { "x-auth-token": token },
           params,
@@ -248,27 +289,30 @@ const AdminDashboard = () => {
 
   const handleExport = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem("adminToken");
       const response = await axios.get(
-        'https://ppmhss-student-registration-backend.onrender.com/api/admin/export',
+        "https://apinmea.oxiumev.com/api/admin/export",
         {
-          headers: { 'x-auth-token': token },
-          responseType: 'blob'
-        }
+          headers: { "x-auth-token": token },
+          responseType: "blob",
+        },
       );
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
-      link.setAttribute('download', `students_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute(
+        "download",
+        `students_${new Date().toISOString().split("T")[0]}.csv`,
+      );
       document.body.appendChild(link);
       link.click();
       link.remove();
 
-      toast.success('Data exported successfully');
+      toast.success("Data exported successfully");
     } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Failed to export data');
+      console.error("Export error:", error);
+      toast.error("Failed to export data");
     }
   };
 
@@ -300,7 +344,7 @@ const AdminDashboard = () => {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await axios.delete(
-        `https://ppmhss-student-registration-backend.onrender.com/api/admin/students/${studentId}`,
+        `https://apinmea.oxiumev.com/api/admin/students/${studentId}`,
         {
           headers: { "x-auth-token": token },
         },
@@ -319,7 +363,7 @@ const AdminDashboard = () => {
 
   const handleDownloadHallTicket = (registrationCode) => {
     window.open(
-      `https://ppmhss-student-registration-backend.onrender.com/api/students/${registrationCode}/hallticket/download`,
+      `https://apinmea.oxiumev.com/api/students/${registrationCode}/hallticket/download`,
       "_blank",
     );
   };
@@ -328,23 +372,23 @@ const AdminDashboard = () => {
     try {
       setDownloadingRoom(roomNo);
 
-      const token = localStorage.getItem('adminToken');
+      const token = localStorage.getItem("adminToken");
 
       if (!token) {
-        toast.error('Please login again');
+        toast.error("Please login again");
         handleLogout();
         return;
       }
 
       const response = await axios.get(
-        `https://ppmhss-student-registration-backend.onrender.com/api/admin/room-attendance/${roomNo}/pdf`,
+        `https://apinmea.oxiumev.com/api/admin/room-attendance/${roomNo}/pdf`,
         {
           headers: {
-            'x-auth-token': token,
-            'Accept': 'text/html'
+            "x-auth-token": token,
+            Accept: "text/html",
           },
-          responseType: 'text'
-        }
+          responseType: "text",
+        },
       );
 
       const newWindow = window.open();
@@ -356,54 +400,131 @@ const AdminDashboard = () => {
           newWindow.print();
         }, 1000);
 
-        toast.success(`Attendance sheet for Room ${roomNo} opened for printing`);
+        toast.success(
+          `Attendance sheet for Room ${roomNo} opened for printing`,
+        );
       } else {
-        toast.error('Please allow popups to view the attendance sheet');
+        toast.error("Please allow popups to view the attendance sheet");
       }
-
     } catch (error) {
-      console.error('Error downloading attendance sheet:', error);
+      console.error("Error downloading attendance sheet:", error);
 
       if (error.response?.status === 401) {
-        toast.error('Session expired. Please login again.');
+        toast.error("Session expired. Please login again.");
         handleLogout();
       } else {
-        toast.error('Failed to generate attendance sheet');
-        const token = localStorage.getItem('adminToken');
-        const url = `https://ppmhss-student-registration-backend.onrender.com/api/admin/room-attendance/${roomNo}/pdf`;
-        window.open(url, '_blank');
+        toast.error("Failed to generate attendance sheet");
+        const token = localStorage.getItem("adminToken");
+        const url = `https://apinmea.oxiumev.com/api/admin/room-attendance/${roomNo}/pdf`;
+        window.open(url, "_blank");
       }
     } finally {
       setDownloadingRoom(null);
     }
   };
 
-  // 21-Slip Exam Sheet Function
   const handleDownloadExamSlips21 = async (roomNo) => {
     try {
-      const token = localStorage.getItem('adminToken');
-      const url = `https://ppmhss-student-registration-backend.onrender.com/api/admin/simple-exam-slips/${roomNo}?preview=false&print=true`;
-      
-      window.open(url, '_blank');
-      toast.success(`Exam slips for Room ${roomNo} opened for printing`);
-      
+      const token = localStorage.getItem("adminToken");
+
+      if (!token) {
+        toast.error("Please login again");
+        handleLogout();
+        return;
+      }
+
+      // Use fetch to get the PDF as blob
+      const response = await fetch(
+        `http://localhost:5010/api/admin/simple-exam-slips/${roomNo}?preview=false&print=true`,
+        {
+          method: "GET",
+          headers: {
+            "x-auth-token": token,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Get the HTML content
+      const html = await response.text();
+
+      // Open in new window and print
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(html);
+        newWindow.document.close();
+
+        setTimeout(() => {
+          newWindow.print();
+        }, 1000);
+
+        toast.success(`Exam slips for Room ${roomNo} opened for printing`);
+      } else {
+        toast.error("Please allow popups to view the exam slips");
+      }
     } catch (error) {
-      console.error('Error downloading exam slips:', error);
-      toast.error('Failed to generate exam slips');
+      console.error("Error downloading exam slips:", error);
+
+      // Fallback: Try direct URL with token in query param
+      const token = localStorage.getItem("adminToken");
+      const url = `http://localhost:5010/api/admin/simple-exam-slips/${roomNo}?preview=false&print=true&token=${encodeURIComponent(token)}`;
+      window.open(url, "_blank");
+
+      toast.error("Trying alternative method...");
     }
   };
 
   const handleDownloadAllExamSlips21 = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
-      const url = `https://ppmhss-student-registration-backend.onrender.com/api/admin/simple-exam-slips?all=true&preview=false&print=true`;
-      
-      window.open(url, '_blank');
-      toast.success(`All exam slips opened for printing`);
-      
+      const token = localStorage.getItem("adminToken");
+
+      if (!token) {
+        toast.error("Please login again");
+        handleLogout();
+        return;
+      }
+
+      const response = await fetch(
+        `http://localhost:5010/api/admin/simple-exam-slips?all=true&preview=false&print=true`,
+        {
+          method: "GET",
+          headers: {
+            "x-auth-token": token,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const html = await response.text();
+
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(html);
+        newWindow.document.close();
+
+        setTimeout(() => {
+          newWindow.print();
+        }, 1000);
+
+        toast.success(`All exam slips opened for printing`);
+      } else {
+        toast.error("Please allow popups to view the exam slips");
+      }
     } catch (error) {
-      console.error('Error downloading all exam slips:', error);
-      toast.error('Failed to generate exam slips');
+      console.error("Error downloading all exam slips:", error);
+
+      // Fallback
+      const token = localStorage.getItem("adminToken");
+      const url = `http://localhost:5010/api/admin/simple-exam-slips?all=true&preview=false&print=true&token=${encodeURIComponent(token)}`;
+      window.open(url, "_blank");
+
+      toast.error("Trying alternative method...");
     }
   };
 
@@ -430,36 +551,42 @@ const AdminDashboard = () => {
     icon,
     color = "#667eea",
     subtitle,
-    onClick
+    onClick,
   }) => (
     <Card
       onClick={onClick}
       sx={{
-        height: '100%',
-        background: 'white',
-        border: '1px solid #e0e0e0',
+        height: "100%",
+        background: "white",
+        border: "1px solid #e0e0e0",
         borderRadius: 2,
-        transition: 'all 0.3s ease',
-        cursor: onClick ? 'pointer' : 'default',
-        position: 'relative',
-        overflow: 'hidden',
-        '&:hover': {
-          transform: onClick ? 'translateY(-4px)' : 'none',
-          boxShadow: onClick ? '0 8px 24px rgba(0,0,0,0.12)' : 'none',
-          borderColor: onClick ? color : '#e0e0e0',
+        transition: "all 0.3s ease",
+        cursor: onClick ? "pointer" : "default",
+        position: "relative",
+        overflow: "hidden",
+        "&:hover": {
+          transform: onClick ? "translateY(-4px)" : "none",
+          boxShadow: onClick ? "0 8px 24px rgba(0,0,0,0.12)" : "none",
+          borderColor: onClick ? color : "#e0e0e0",
         },
       }}
     >
       <CardContent sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
+        >
           <Box sx={{ flex: 1 }}>
             <Typography
               variant="subtitle2"
               sx={{
-                color: 'text.secondary',
+                color: "text.secondary",
                 fontWeight: 600,
                 mb: 1,
-                display: 'block'
+                display: "block",
               }}
             >
               {title}
@@ -469,7 +596,7 @@ const AdminDashboard = () => {
               sx={{
                 fontWeight: 700,
                 color: color,
-                lineHeight: 1
+                lineHeight: 1,
               }}
             >
               {value}
@@ -478,9 +605,9 @@ const AdminDashboard = () => {
               <Typography
                 variant="caption"
                 sx={{
-                  color: 'text.secondary',
-                  display: 'block',
-                  mt: 1
+                  color: "text.secondary",
+                  display: "block",
+                  mt: 1,
                 }}
               >
                 {subtitle}
@@ -508,22 +635,29 @@ const AdminDashboard = () => {
     const filledPercentage = (room.count / 20) * 100;
 
     return (
-      <Fade in={true} timeout={300 + (index * 100)}>
+      <Fade in={true} timeout={300 + index * 100}>
         <Card
           sx={{
-            height: '100%',
-            background: 'white',
-            border: '1px solid #e0e0e0',
+            height: "100%",
+            background: "white",
+            border: "1px solid #e0e0e0",
             borderRadius: 2,
-            transition: 'all 0.3s ease',
-            '&:hover': {
-              transform: 'translateY(-2px)',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-            }
+            transition: "all 0.3s ease",
+            "&:hover": {
+              transform: "translateY(-2px)",
+              boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+            },
           }}
         >
           <CardContent sx={{ p: 2.5 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                mb: 2,
+              }}
+            >
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
                   Room {room._id}
@@ -534,8 +668,8 @@ const AdminDashboard = () => {
               </Box>
               <Avatar
                 sx={{
-                  bgcolor: alpha('#667eea', 0.1),
-                  color: '#667eea',
+                  bgcolor: alpha("#667eea", 0.1),
+                  color: "#667eea",
                   width: 40,
                   height: 40,
                 }}
@@ -545,7 +679,9 @@ const AdminDashboard = () => {
             </Box>
 
             <Box sx={{ mb: 2.5 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Box
+                sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+              >
                 <Typography variant="body2" color="text.secondary">
                   Occupancy
                 </Typography>
@@ -559,13 +695,16 @@ const AdminDashboard = () => {
                 sx={{
                   height: 6,
                   borderRadius: 3,
-                  bgcolor: '#f5f5f5',
-                  '& .MuiLinearProgress-bar': {
-                    bgcolor: filledPercentage >= 90 ? '#f44336' :
-                      filledPercentage >= 75 ? '#ff9800' :
-                        '#4caf50',
+                  bgcolor: "#f5f5f5",
+                  "& .MuiLinearProgress-bar": {
+                    bgcolor:
+                      filledPercentage >= 90
+                        ? "#f44336"
+                        : filledPercentage >= 75
+                          ? "#ff9800"
+                          : "#4caf50",
                     borderRadius: 3,
-                  }
+                  },
                 }}
               />
             </Box>
@@ -575,13 +714,17 @@ const AdminDashboard = () => {
                 <Paper
                   sx={{
                     p: 1,
-                    textAlign: 'center',
-                    bgcolor: '#f9f9f9',
+                    textAlign: "center",
+                    bgcolor: "#f9f9f9",
                     borderRadius: 1.5,
-                    border: '1px solid #e0e0e0'
+                    border: "1px solid #e0e0e0",
                   }}
                 >
-                  <Typography variant="caption" color="text.secondary" display="block">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                  >
                     Available
                   </Typography>
                   <Typography variant="h6" color="#4caf50" fontWeight={600}>
@@ -593,13 +736,17 @@ const AdminDashboard = () => {
                 <Paper
                   sx={{
                     p: 1,
-                    textAlign: 'center',
-                    bgcolor: '#f9f9f9',
+                    textAlign: "center",
+                    bgcolor: "#f9f9f9",
                     borderRadius: 1.5,
-                    border: '1px solid #e0e0e0'
+                    border: "1px solid #e0e0e0",
                   }}
                 >
-                  <Typography variant="caption" color="text.secondary" display="block">
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    display="block"
+                  >
                     Occupied
                   </Typography>
                   <Typography variant="h6" color="#2196f3" fontWeight={600}>
@@ -620,15 +767,15 @@ const AdminDashboard = () => {
                 }}
                 fullWidth
                 sx={{
-                  bgcolor: '#667eea',
-                  color: 'white',
+                  bgcolor: "#667eea",
+                  color: "white",
                   borderRadius: 1.5,
                   py: 0.75,
-                  textTransform: 'none',
+                  textTransform: "none",
                   fontWeight: 600,
-                  '&:hover': {
-                    bgcolor: '#5a6fd8',
-                  }
+                  "&:hover": {
+                    bgcolor: "#5a6fd8",
+                  },
                 }}
               >
                 View Students
@@ -641,22 +788,24 @@ const AdminDashboard = () => {
                 disabled={downloadingRoom === room._id}
                 fullWidth
                 sx={{
-                  borderColor: '#ddd',
-                  color: 'text.primary',
+                  borderColor: "#ddd",
+                  color: "text.primary",
                   borderRadius: 1.5,
                   py: 0.75,
-                  textTransform: 'none',
+                  textTransform: "none",
                   fontWeight: 600,
-                  '&:hover': {
-                    borderColor: '#667eea',
-                    color: '#667eea',
-                    bgcolor: alpha('#667eea', 0.04),
-                  }
+                  "&:hover": {
+                    borderColor: "#667eea",
+                    color: "#667eea",
+                    bgcolor: alpha("#667eea", 0.04),
+                  },
                 }}
               >
-                {downloadingRoom === room._id ? 'Downloading...' : 'Attendance Sheet'}
+                {downloadingRoom === room._id
+                  ? "Downloading..."
+                  : "Attendance Sheet"}
               </Button>
-              
+
               {/* 21-Slip Exam Sheet Button */}
               <Button
                 variant="outlined"
@@ -665,17 +814,17 @@ const AdminDashboard = () => {
                 onClick={() => handleDownloadExamSlips21(room._id)}
                 fullWidth
                 sx={{
-                  borderColor: '#4caf50',
-                  color: '#4caf50',
+                  borderColor: "#4caf50",
+                  color: "#4caf50",
                   borderRadius: 1.5,
                   py: 0.75,
-                  textTransform: 'none',
+                  textTransform: "none",
                   fontWeight: 600,
-                  '&:hover': {
-                    borderColor: '#388e3c',
-                    color: '#388e3c',
-                    bgcolor: alpha('#4caf50', 0.04),
-                  }
+                  "&:hover": {
+                    borderColor: "#388e3c",
+                    color: "#388e3c",
+                    bgcolor: alpha("#4caf50", 0.04),
+                  },
                 }}
               >
                 21-Slip Exam Sheet
@@ -691,23 +840,23 @@ const AdminDashboard = () => {
     return (
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          height: '100vh',
-          background: '#f5f7fa',
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+          background: "#f5f7fa",
         }}
       >
-        <Box sx={{ textAlign: 'center' }}>
+        <Box sx={{ textAlign: "center" }}>
           <Box
             sx={{
               width: 60,
               height: 60,
-              borderRadius: '50%',
-              border: '3px solid #e0e0e0',
-              borderTopColor: '#667eea',
-              animation: 'spin 1s linear infinite',
-              mx: 'auto',
+              borderRadius: "50%",
+              border: "3px solid #e0e0e0",
+              borderTopColor: "#667eea",
+              animation: "spin 1s linear infinite",
+              mx: "auto",
               mb: 3,
             }}
           />
@@ -722,8 +871,9 @@ const AdminDashboard = () => {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
-        background: '#f5f7fa',
+        minHeight: "100vh",
+        background: "#f5f7fa",
+        position: "relative", // For floating button positioning
       }}
     >
       <Container maxWidth="xl" sx={{ pt: 3, pb: 6 }}>
@@ -732,21 +882,26 @@ const AdminDashboard = () => {
           sx={{
             mb: 4,
             borderRadius: 2,
-            background: 'white',
-            border: '1px solid #e0e0e0',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-            overflow: 'hidden',
+            background: "white",
+            border: "1px solid #e0e0e0",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+            overflow: "hidden",
           }}
         >
           <Box sx={{ p: 3 }}>
-            <Grid container alignItems="center" justifyContent="space-between" spacing={2}>
+            <Grid
+              container
+              alignItems="center"
+              justifyContent="space-between"
+              spacing={2}
+            >
               <Grid item xs={12} md={6}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <Avatar
                     sx={{
                       width: 56,
                       height: 56,
-                      background: '#667eea',
+                      background: "#667eea",
                     }}
                   >
                     <DashboardIcon />
@@ -755,19 +910,33 @@ const AdminDashboard = () => {
                     <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
                       Admin Dashboard
                     </Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "text.secondary" }}
+                    >
                       Manage student registrations and analytics
                     </Typography>
                   </Box>
                 </Box>
               </Grid>
               <Grid item xs={12} md={6}>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1.5, flexWrap: 'wrap' }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: 1.5,
+                    flexWrap: "wrap",
+                  }}
+                >
+
                   <Tooltip title="Refresh Data">
                     <IconButton
-                      onClick={() => { fetchDashboardData(); fetchStudents(); }}
+                      onClick={() => {
+                        fetchDashboardData();
+                        fetchStudents();
+                      }}
                       sx={{
-                        color: '#667eea',
+                        color: "#667eea",
                       }}
                     >
                       <RefreshIcon />
@@ -777,7 +946,7 @@ const AdminDashboard = () => {
                     <IconButton
                       onClick={handleExport}
                       sx={{
-                        color: '#4caf50',
+                        color: "#4caf50",
                       }}
                     >
                       <CloudDownloadIcon />
@@ -788,16 +957,16 @@ const AdminDashboard = () => {
                     startIcon={<LogoutIcon />}
                     onClick={handleLogout}
                     sx={{
-                      color: '#f44336',
-                      borderColor: '#f44336',
+                      color: "#f44336",
+                      borderColor: "#f44336",
                       borderRadius: 1.5,
                       px: 2,
-                      textTransform: 'none',
+                      textTransform: "none",
                       fontWeight: 600,
-                      '&:hover': {
-                        borderColor: '#d32f2f',
-                        bgcolor: alpha('#f44336', 0.04),
-                      }
+                      "&:hover": {
+                        borderColor: "#d32f2f",
+                        bgcolor: alpha("#f44336", 0.04),
+                      },
                     }}
                   >
                     Logout
@@ -808,32 +977,32 @@ const AdminDashboard = () => {
           </Box>
 
           {/* Tabs */}
-          <Box sx={{ px: 3, borderTop: '1px solid #e0e0e0' }}>
+          <Box sx={{ px: 3, borderTop: "1px solid #e0e0e0" }}>
             <Tabs
               value={activeTab}
               onChange={(e, newValue) => setActiveTab(newValue)}
               variant="scrollable"
               scrollButtons="auto"
               sx={{
-                '& .MuiTabs-indicator': {
+                "& .MuiTabs-indicator": {
                   height: 3,
-                  background: '#667eea',
+                  background: "#667eea",
                 },
-                '& .MuiTab-root': {
-                  textTransform: 'none',
+                "& .MuiTab-root": {
+                  textTransform: "none",
                   fontWeight: 600,
-                  fontSize: '0.95rem',
+                  fontSize: "0.95rem",
                   minHeight: 60,
-                  color: 'text.secondary',
-                  '&.Mui-selected': {
-                    color: '#667eea',
+                  color: "text.secondary",
+                  "&.Mui-selected": {
+                    color: "#667eea",
                   },
-                }
+                },
               }}
             >
               <Tab
                 label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <DashboardIcon />
                     Overview
                   </Box>
@@ -841,26 +1010,36 @@ const AdminDashboard = () => {
               />
               <Tab
                 label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <PeopleIcon />
                     Students
                     <Chip
                       label={totalStudents}
                       size="small"
-                      sx={{ height: 20, fontSize: '0.75rem', fontWeight: 600, ml: 1 }}
+                      sx={{
+                        height: 20,
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        ml: 1,
+                      }}
                     />
                   </Box>
                 }
               />
               <Tab
                 label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <RoomIcon />
                     Rooms
                     <Chip
                       label={stats?.stats.rooms?.length || 0}
                       size="small"
-                      sx={{ height: 20, fontSize: '0.75rem', fontWeight: 600, ml: 1 }}
+                      sx={{
+                        height: 20,
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        ml: 1,
+                      }}
                     />
                   </Box>
                 }
@@ -920,16 +1099,26 @@ const AdminDashboard = () => {
                   sx={{
                     p: 3,
                     borderRadius: 3,
-                    background: 'rgba(255,255,255,0.9)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
-                    height: '100%',
+                    background: "rgba(255,255,255,0.9)",
+                    backdropFilter: "blur(10px)",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
+                    height: "100%",
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      mb: 3,
+                    }}
+                  >
                     <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
+                      <Typography
+                        variant="h6"
+                        sx={{ fontWeight: 700, mb: 0.5 }}
+                      >
                         Registration Analytics
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
@@ -947,9 +1136,23 @@ const AdminDashboard = () => {
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={chartData}>
                         <defs>
-                          <linearGradient id="colorStudents" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#667eea" stopOpacity={0.8} />
-                            <stop offset="95%" stopColor="#667eea" stopOpacity={0} />
+                          <linearGradient
+                            id="colorStudents"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="5%"
+                              stopColor="#667eea"
+                              stopOpacity={0.8}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="#667eea"
+                              stopOpacity={0}
+                            />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -958,8 +1161,8 @@ const AdminDashboard = () => {
                         <RechartsTooltip
                           contentStyle={{
                             borderRadius: 8,
-                            border: 'none',
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                            border: "none",
+                            boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
                           }}
                         />
                         <Area
@@ -980,10 +1183,10 @@ const AdminDashboard = () => {
                   sx={{
                     p: 3,
                     borderRadius: 2,
-                    background: 'white',
-                    border: '1px solid #e0e0e0',
-                    boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
-                    height: '100%',
+                    background: "white",
+                    border: "1px solid #e0e0e0",
+                    boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+                    height: "100%",
                   }}
                 >
                   <Box sx={{ mb: 3 }}>
@@ -994,33 +1197,46 @@ const AdminDashboard = () => {
                       Student gender distribution
                     </Typography>
                   </Box>
-                  <Box sx={{ height: 250, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Box
+                    sx={{
+                      height: 250,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
                     {stats?.stats.gender && stats.stats.gender.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart
                           data={stats.stats.gender}
                           margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
                         >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                          <XAxis 
-                            dataKey="_id" 
+                          <CartesianGrid
+                            strokeDasharray="3 3"
+                            stroke="#f0f0f0"
+                          />
+                          <XAxis
+                            dataKey="_id"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fill: '#666', fontSize: 12 }}
+                            tick={{ fill: "#666", fontSize: 12 }}
                           />
-                          <YAxis 
+                          <YAxis
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fill: '#666', fontSize: 12 }}
+                            tick={{ fill: "#666", fontSize: 12 }}
                           />
-                          <RechartsTooltip 
-                            formatter={(value) => [`${value} students`, 'Count']}
+                          <RechartsTooltip
+                            formatter={(value) => [
+                              `${value} students`,
+                              "Count",
+                            ]}
                             labelFormatter={(label) => `${label}`}
                             contentStyle={{
                               borderRadius: 6,
-                              border: '1px solid #e0e0e0',
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                              background: 'white',
+                              border: "1px solid #e0e0e0",
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                              background: "white",
                             }}
                           />
                           <Bar
@@ -1033,35 +1249,64 @@ const AdminDashboard = () => {
                         </BarChart>
                       </ResponsiveContainer>
                     ) : (
-                      <Box sx={{ textAlign: 'center', color: 'text.secondary' }}>
-                        <PeopleIcon sx={{ fontSize: 60, opacity: 0.3, mb: 2 }} />
+                      <Box
+                        sx={{ textAlign: "center", color: "text.secondary" }}
+                      >
+                        <PeopleIcon
+                          sx={{ fontSize: 60, opacity: 0.3, mb: 2 }}
+                        />
                         <Typography>No gender data available</Typography>
                       </Box>
                     )}
                   </Box>
                   {/* Add summary below the chart */}
                   {stats?.stats.gender && stats.stats.gender.length > 0 && (
-                    <Box sx={{ mt: 2, pt: 2, borderTop: '1px dashed #e0e0e0' }}>
+                    <Box sx={{ mt: 2, pt: 2, borderTop: "1px dashed #e0e0e0" }}>
                       <Grid container spacing={1}>
                         {stats.stats.gender.map((item, index) => (
                           <Grid item xs={6} key={index}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <Typography variant="body2" color="text.secondary">
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                              }}
+                            >
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
                                 {item._id}:
                               </Typography>
-                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              <Typography
+                                variant="body2"
+                                sx={{ fontWeight: 600 }}
+                              >
                                 {item.count}
                               </Typography>
                             </Box>
                           </Grid>
                         ))}
                         <Grid item xs={12}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              mt: 1,
+                            }}
+                          >
                             <Typography variant="body2" color="text.secondary">
                               Total:
                             </Typography>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              {stats.stats.gender.reduce((sum, item) => sum + item.count, 0)}
+                            <Typography
+                              variant="body2"
+                              sx={{ fontWeight: 600 }}
+                            >
+                              {stats.stats.gender.reduce(
+                                (sum, item) => sum + item.count,
+                                0,
+                              )}
                             </Typography>
                           </Box>
                         </Grid>
@@ -1077,12 +1322,19 @@ const AdminDashboard = () => {
               sx={{
                 p: 3,
                 borderRadius: 2,
-                background: 'white',
-                border: '1px solid #e0e0e0',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+                background: "white",
+                border: "1px solid #e0e0e0",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  mb: 3,
+                }}
+              >
                 <Box>
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
                     Recent Registrations
@@ -1096,7 +1348,11 @@ const AdminDashboard = () => {
                   size="small"
                   endIcon={<ChevronRightIcon />}
                   onClick={() => setActiveTab(1)}
-                  sx={{ borderRadius: 1.5, textTransform: 'none', fontWeight: 600 }}
+                  sx={{
+                    borderRadius: 1.5,
+                    textTransform: "none",
+                    fontWeight: 600,
+                  }}
                 >
                   View All
                 </Button>
@@ -1106,43 +1362,62 @@ const AdminDashboard = () => {
                   <Grid item xs={12} sm={6} md={3} key={index}>
                     <Card
                       sx={{
-                        height: '100%',
-                        border: '1px solid #e0e0e0',
+                        height: "100%",
+                        border: "1px solid #e0e0e0",
                         borderRadius: 2,
                       }}
                     >
                       <CardContent sx={{ p: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.5,
+                            mb: 1.5,
+                          }}
+                        >
                           <Avatar
                             sx={{
                               width: 40,
                               height: 40,
-                              bgcolor: alpha('#667eea', 0.1),
-                              color: '#667eea',
+                              bgcolor: alpha("#667eea", 0.1),
+                              color: "#667eea",
                               fontWeight: 600,
                             }}
                           >
                             {student.name.charAt(0)}
                           </Avatar>
                           <Box sx={{ flex: 1 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontWeight: 600, lineHeight: 1.2 }}
+                            >
                               {student.name}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
                               {student.registrationCode}
                             </Typography>
                           </Box>
                         </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
                           <Chip
                             label={`Room ${student.roomNo}`}
                             size="small"
                             sx={{
                               height: 20,
-                              fontSize: '0.7rem',
-                              bgcolor: alpha('#4caf50', 0.1),
-                              color: '#4caf50',
-                              fontWeight: 600
+                              fontSize: "0.7rem",
+                              bgcolor: alpha("#4caf50", 0.1),
+                              color: "#4caf50",
+                              fontWeight: 600,
                             }}
                           />
                           <Typography variant="caption" color="text.secondary">
@@ -1165,14 +1440,21 @@ const AdminDashboard = () => {
               sx={{
                 mb: 4,
                 borderRadius: 2,
-                background: 'white',
-                border: '1px solid #e0e0e0',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
-                overflow: 'hidden',
+                background: "white",
+                border: "1px solid #e0e0e0",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+                overflow: "hidden",
               }}
             >
               <Box sx={{ p: 3, pb: 0 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 3,
+                  }}
+                >
                   <Box>
                     <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
                       Student Management
@@ -1181,21 +1463,22 @@ const AdminDashboard = () => {
                       Manage and filter student registrations
                     </Typography>
                   </Box>
-                  <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Box sx={{ display: "flex", gap: 2 }}>
+
                     <Tooltip title="Export All Data">
                       <Button
                         variant="contained"
                         startIcon={<CloudDownloadIcon />}
                         onClick={handleExport}
                         sx={{
-                          bgcolor: '#4caf50',
-                          color: 'white',
+                          bgcolor: "#4caf50",
+                          color: "white",
                           borderRadius: 1.5,
-                          textTransform: 'none',
+                          textTransform: "none",
                           fontWeight: 600,
-                          '&:hover': {
-                            bgcolor: '#388e3c',
-                          }
+                          "&:hover": {
+                            bgcolor: "#388e3c",
+                          },
                         }}
                       >
                         Export Data
@@ -1210,8 +1493,8 @@ const AdminDashboard = () => {
                     p: 2,
                     mb: 3,
                     borderRadius: 2,
-                    bgcolor: '#f9f9f9',
-                    border: '1px solid #e0e0e0',
+                    bgcolor: "#f9f9f9",
+                    border: "1px solid #e0e0e0",
                   }}
                 >
                   <Grid container spacing={2} alignItems="center">
@@ -1225,7 +1508,9 @@ const AdminDashboard = () => {
                         >
                           <MenuItem value="all">All Fields</MenuItem>
                           <MenuItem value="phone">Phone Number</MenuItem>
-                          <MenuItem value="registration">Registration Code</MenuItem>
+                          <MenuItem value="registration">
+                            Registration Code
+                          </MenuItem>
                           <MenuItem value="room">Room Number</MenuItem>
                         </Select>
                       </FormControl>
@@ -1238,10 +1523,10 @@ const AdminDashboard = () => {
                           searchType === "phone"
                             ? "Search by phone number..."
                             : searchType === "registration"
-                            ? "Search by registration code..."
-                            : searchType === "room"
-                            ? "Search by room number..."
-                            : "Search by name, code, phone, or village..."
+                              ? "Search by registration code..."
+                              : searchType === "room"
+                                ? "Search by room number..."
+                                : "Search by name, code, phone, or village..."
                         }
                         value={search}
                         onChange={handleSearch}
@@ -1295,15 +1580,17 @@ const AdminDashboard = () => {
               <TableContainer>
                 <Table>
                   <TableHead>
-                    <TableRow sx={{
-                      bgcolor: '#f9f9f9',
-                      '& th': {
-                        fontWeight: 600,
-                        color: 'text.primary',
-                        borderBottom: '2px solid #e0e0e0',
-                        py: 2,
-                      }
-                    }}>
+                    <TableRow
+                      sx={{
+                        bgcolor: "#f9f9f9",
+                        "& th": {
+                          fontWeight: 600,
+                          color: "text.primary",
+                          borderBottom: "2px solid #e0e0e0",
+                          py: 2,
+                        },
+                      }}
+                    >
                       <TableCell>Student</TableCell>
                       <TableCell>Contact</TableCell>
                       <TableCell>Academic Info</TableCell>
@@ -1317,45 +1604,65 @@ const AdminDashboard = () => {
                         key={student._id}
                         hover
                         sx={{
-                          '&:hover': {
-                            bgcolor: '#f9f9f9',
+                          "&:hover": {
+                            bgcolor: "#f9f9f9",
                           },
-                          '& td': {
+                          "& td": {
                             py: 2,
-                            borderBottom: '1px solid #e0e0e0',
-                          }
+                            borderBottom: "1px solid #e0e0e0",
+                          },
                         }}
                       >
                         <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 2,
+                            }}
+                          >
                             <Avatar
                               sx={{
                                 width: 40,
                                 height: 40,
-                                bgcolor: alpha('#667eea', 0.1),
-                                color: '#667eea',
+                                bgcolor: alpha("#667eea", 0.1),
+                                color: "#667eea",
                                 fontWeight: 600,
                               }}
                             >
                               {student.name.charAt(0)}
                             </Avatar>
                             <Box>
-                              <Typography variant="body1" sx={{ fontWeight: 600, mb: 0.5 }}>
+                              <Typography
+                                variant="body1"
+                                sx={{ fontWeight: 600, mb: 0.5 }}
+                              >
                                 {student.name}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary" display="block">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                display="block"
+                              >
                                 {student.fatherName}
                               </Typography>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                  mt: 0.5,
+                                }}
+                              >
                                 <Chip
                                   label={student.gender}
                                   size="small"
                                   icon={getGenderIcon(student.gender)}
                                   sx={{
                                     height: 20,
-                                    fontSize: '0.7rem',
-                                    bgcolor: alpha('#4caf50', 0.1),
-                                    color: '#4caf50',
+                                    fontSize: "0.7rem",
+                                    bgcolor: alpha("#4caf50", 0.1),
+                                    color: "#4caf50",
                                   }}
                                 />
                               </Box>
@@ -1363,7 +1670,10 @@ const AdminDashboard = () => {
                           </Box>
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 600, mb: 0.5 }}
+                          >
                             {student.phoneNo}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
@@ -1371,50 +1681,71 @@ const AdminDashboard = () => {
                           </Typography>
                         </TableCell>
                         <TableCell>
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 0.5,
+                            }}
+                          >
                             <Chip
                               label={`Class ${student.studyingClass}`}
                               size="small"
                               sx={{
-                                width: 'fit-content',
-                                bgcolor: alpha('#ff9800', 0.1),
-                                color: '#ff9800',
+                                width: "fit-content",
+                                bgcolor: alpha("#ff9800", 0.1),
+                                color: "#ff9800",
                                 fontWeight: 600,
                               }}
                             />
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
                               {student.schoolName}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
                               Medium: {student.medium}
                             </Typography>
                           </Box>
                         </TableCell>
                         <TableCell>
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 0.5,
+                            }}
+                          >
                             <Chip
                               label={student.registrationCode}
                               size="small"
                               sx={{
-                                width: 'fit-content',
-                                fontFamily: 'monospace',
-                                bgcolor: alpha('#667eea', 0.1),
-                                color: '#667eea',
+                                width: "fit-content",
+                                fontFamily: "monospace",
+                                bgcolor: alpha("#667eea", 0.1),
+                                color: "#667eea",
                                 fontWeight: 600,
                               }}
                             />
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontWeight: 600 }}
+                            >
                               {new Date(student.createdAt).toLocaleDateString()}
                             </Typography>
-                            <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Box sx={{ display: "flex", gap: 1 }}>
                               <Chip
                                 label={`Room ${student.roomNo}`}
                                 size="small"
                                 sx={{
                                   height: 20,
-                                  fontSize: '0.7rem',
-                                  bgcolor: alpha('#9c27b0', 0.1),
-                                  color: '#9c27b0',
+                                  fontSize: "0.7rem",
+                                  bgcolor: alpha("#9c27b0", 0.1),
+                                  color: "#9c27b0",
                                   fontWeight: 600,
                                 }}
                               />
@@ -1423,9 +1754,9 @@ const AdminDashboard = () => {
                                 size="small"
                                 sx={{
                                   height: 20,
-                                  fontSize: '0.7rem',
-                                  bgcolor: alpha('#4caf50', 0.1),
-                                  color: '#4caf50',
+                                  fontSize: "0.7rem",
+                                  bgcolor: alpha("#4caf50", 0.1),
+                                  color: "#4caf50",
                                   fontWeight: 600,
                                 }}
                               />
@@ -1433,13 +1764,19 @@ const AdminDashboard = () => {
                           </Box>
                         </TableCell>
                         <TableCell align="center">
-                          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              gap: 1,
+                              justifyContent: "center",
+                            }}
+                          >
                             <Tooltip title="View Details">
                               <IconButton
                                 size="small"
                                 onClick={() => handleViewDetails(student)}
                                 sx={{
-                                  color: '#2196f3',
+                                  color: "#2196f3",
                                 }}
                               >
                                 <VisibilityIcon fontSize="small" />
@@ -1448,9 +1785,13 @@ const AdminDashboard = () => {
                             <Tooltip title="Download Hall Ticket">
                               <IconButton
                                 size="small"
-                                onClick={() => handleDownloadHallTicket(student.registrationCode)}
+                                onClick={() =>
+                                  handleDownloadHallTicket(
+                                    student.registrationCode,
+                                  )
+                                }
                                 sx={{
-                                  color: '#4caf50',
+                                  color: "#4caf50",
                                 }}
                               >
                                 <DownloadIcon fontSize="small" />
@@ -1461,7 +1802,7 @@ const AdminDashboard = () => {
                                 size="small"
                                 onClick={() => handleDeleteStudent(student._id)}
                                 sx={{
-                                  color: '#f44336',
+                                  color: "#f44336",
                                 }}
                               >
                                 <DeleteIcon fontSize="small" />
@@ -1476,11 +1817,11 @@ const AdminDashboard = () => {
               </TableContainer>
 
               {students.length === 0 && !loading && (
-                <Box sx={{ textAlign: 'center', py: 8 }}>
+                <Box sx={{ textAlign: "center", py: 8 }}>
                   <SearchIcon
                     sx={{
                       fontSize: 60,
-                      color: 'text.secondary',
+                      color: "text.secondary",
                       opacity: 0.3,
                       mb: 2,
                     }}
@@ -1503,7 +1844,7 @@ const AdminDashboard = () => {
                 onRowsPerPageChange={handleChangeRowsPerPage}
                 rowsPerPageOptions={[5, 10, 25, 50]}
                 sx={{
-                  borderTop: '1px solid #e0e0e0',
+                  borderTop: "1px solid #e0e0e0",
                   px: 3,
                 }}
               />
@@ -1519,12 +1860,19 @@ const AdminDashboard = () => {
                 p: 3,
                 mb: 4,
                 borderRadius: 2,
-                background: 'white',
-                border: '1px solid #e0e0e0',
-                boxShadow: '0 2px 12px rgba(0,0,0,0.04)',
+                background: "white",
+                border: "1px solid #e0e0e0",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
               }}
             >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mb: 4,
+                }}
+              >
                 <Box>
                   <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
                     Room Management
@@ -1533,7 +1881,7 @@ const AdminDashboard = () => {
                     Monitor and manage room allocations
                   </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
                   <Chip
                     icon={<PeopleIcon />}
                     label={`${totalStudents} Students`}
@@ -1544,20 +1892,21 @@ const AdminDashboard = () => {
                     label={`${stats?.stats.rooms?.length || 0} Rooms`}
                     sx={{ fontWeight: 600 }}
                   />
+
                   <Button
                     variant="contained"
                     startIcon={<PrintIcon />}
                     onClick={handleDownloadAllExamSlips21}
                     sx={{
-                      bgcolor: '#4caf50',
-                      color: 'white',
+                      bgcolor: "#4caf50",
+                      color: "white",
                       borderRadius: 1.5,
-                      textTransform: 'none',
+                      textTransform: "none",
                       fontWeight: 600,
                       px: 3,
-                      '&:hover': {
-                        bgcolor: '#388e3c',
-                      }
+                      "&:hover": {
+                        bgcolor: "#388e3c",
+                      },
                     }}
                   >
                     Print All Exam Slips
@@ -1583,12 +1932,12 @@ const AdminDashboard = () => {
           maxWidth="md"
           fullWidth
           PaperProps={{
-            sx: { borderRadius: 2 }
+            sx: { borderRadius: 2 },
           }}
         >
-          <DialogTitle sx={{ borderBottom: '1px solid #e0e0e0' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar sx={{ bgcolor: '#667eea' }}>
+          <DialogTitle sx={{ borderBottom: "1px solid #e0e0e0" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Avatar sx={{ bgcolor: "#667eea" }}>
                 <PersonIcon />
               </Avatar>
               <Box>
@@ -1603,20 +1952,31 @@ const AdminDashboard = () => {
             {selectedStudent && (
               <Grid container spacing={3}>
                 <Grid item xs={12}>
-                  <Box sx={{ display: 'flex', gap: 3, mb: 3 }}>
+                  <Box sx={{ display: "flex", gap: 3, mb: 3 }}>
                     <Box>
-                      <Typography variant="caption" color="textSecondary" gutterBottom>
+                      <Typography
+                        variant="caption"
+                        color="textSecondary"
+                        gutterBottom
+                      >
                         Registration Code
                       </Typography>
-                      <Typography variant="h6" sx={{ fontFamily: 'monospace', color: '#667eea' }}>
+                      <Typography
+                        variant="h6"
+                        sx={{ fontFamily: "monospace", color: "#667eea" }}
+                      >
                         {selectedStudent.registrationCode}
                       </Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" color="textSecondary" gutterBottom>
+                      <Typography
+                        variant="caption"
+                        color="textSecondary"
+                        gutterBottom
+                      >
                         Application Number
                       </Typography>
-                      <Typography variant="h6" sx={{ fontFamily: 'monospace' }}>
+                      <Typography variant="h6" sx={{ fontFamily: "monospace" }}>
                         {selectedStudent.applicationNo}
                       </Typography>
                     </Box>
@@ -1624,7 +1984,11 @@ const AdminDashboard = () => {
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                  <Typography
+                    variant="subtitle2"
+                    color="textSecondary"
+                    gutterBottom
+                  >
                     Student Name
                   </Typography>
                   <Typography variant="body1" sx={{ fontWeight: 600 }}>
@@ -1633,7 +1997,11 @@ const AdminDashboard = () => {
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                  <Typography
+                    variant="subtitle2"
+                    color="textSecondary"
+                    gutterBottom
+                  >
                     Father's Name
                   </Typography>
                   <Typography variant="body1">
@@ -1642,25 +2010,37 @@ const AdminDashboard = () => {
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                  <Typography
+                    variant="subtitle2"
+                    color="textSecondary"
+                    gutterBottom
+                  >
                     Aadhaar Number
                   </Typography>
-                  <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
+                  <Typography variant="body1" sx={{ fontFamily: "monospace" }}>
                     {selectedStudent.aadhaarNo}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                  <Typography
+                    variant="subtitle2"
+                    color="textSecondary"
+                    gutterBottom
+                  >
                     Phone Number
                   </Typography>
-                  <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
+                  <Typography variant="body1" sx={{ fontFamily: "monospace" }}>
                     {selectedStudent.phoneNo}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                  <Typography
+                    variant="subtitle2"
+                    color="textSecondary"
+                    gutterBottom
+                  >
                     School Name
                   </Typography>
                   <Typography variant="body1">
@@ -1669,16 +2049,25 @@ const AdminDashboard = () => {
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                  <Typography
+                    variant="subtitle2"
+                    color="textSecondary"
+                    gutterBottom
+                  >
                     Class & Medium
                   </Typography>
                   <Typography variant="body1">
-                    Class {selectedStudent.studyingClass} - {selectedStudent.medium}
+                    Class {selectedStudent.studyingClass} -{" "}
+                    {selectedStudent.medium}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                  <Typography
+                    variant="subtitle2"
+                    color="textSecondary"
+                    gutterBottom
+                  >
                     Gender
                   </Typography>
                   <Typography variant="body1">
@@ -1687,7 +2076,11 @@ const AdminDashboard = () => {
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+                  <Typography
+                    variant="subtitle2"
+                    color="textSecondary"
+                    gutterBottom
+                  >
                     Room & Seat
                   </Typography>
                   <Typography variant="body1" sx={{ fontWeight: 600 }}>
@@ -1697,84 +2090,120 @@ const AdminDashboard = () => {
 
                 <Grid item xs={12}>
                   <Divider sx={{ my: 2 }} />
-                  <Typography variant="subtitle1" color="textSecondary" gutterBottom>
+                  <Typography
+                    variant="subtitle1"
+                    color="textSecondary"
+                    gutterBottom
+                  >
                     Address Details
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    gutterBottom
+                  >
                     House Name
                   </Typography>
                   <Typography variant="body1">
-                    {selectedStudent.address?.houseName || 'N/A'}
+                    {selectedStudent.address?.houseName || "N/A"}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    gutterBottom
+                  >
                     Place
                   </Typography>
                   <Typography variant="body1">
-                    {selectedStudent.address?.place || 'N/A'}
+                    {selectedStudent.address?.place || "N/A"}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    gutterBottom
+                  >
                     Post Office
                   </Typography>
                   <Typography variant="body1">
-                    {selectedStudent.address?.postOffice || 'N/A'}
+                    {selectedStudent.address?.postOffice || "N/A"}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    gutterBottom
+                  >
                     PIN Code
                   </Typography>
                   <Typography variant="body1">
-                    {selectedStudent.address?.pinCode || 'N/A'}
+                    {selectedStudent.address?.pinCode || "N/A"}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    gutterBottom
+                  >
                     Local Body
                   </Typography>
                   <Typography variant="body1">
-                    {selectedStudent.address?.localBodyName || 'N/A'} ({selectedStudent.address?.localBodyType || 'N/A'})
+                    {selectedStudent.address?.localBodyName || "N/A"} (
+                    {selectedStudent.address?.localBodyType || "N/A"})
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Typography variant="body2" color="text-secondary" gutterBottom>
+                  <Typography
+                    variant="body2"
+                    color="text-secondary"
+                    gutterBottom
+                  >
                     Village
                   </Typography>
                   <Typography variant="body1">
-                    {selectedStudent.address?.village || 'N/A'}
+                    {selectedStudent.address?.village || "N/A"}
                   </Typography>
                 </Grid>
 
                 <Grid item xs={12}>
                   <Divider sx={{ my: 2 }} />
-                  <Typography variant="body2" color="textSecondary" gutterBottom>
+                  <Typography
+                    variant="body2"
+                    color="textSecondary"
+                    gutterBottom
+                  >
                     Registration Date & Time
                   </Typography>
                   <Typography variant="body1">
-                    {new Date(selectedStudent.createdAt).toLocaleString('en-IN', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {new Date(selectedStudent.createdAt).toLocaleString(
+                      "en-IN",
+                      {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      },
+                    )}
                   </Typography>
                 </Grid>
               </Grid>
             )}
           </DialogContent>
-          <DialogActions sx={{ p: 3, borderTop: '1px solid #e0e0e0' }}>
+          <DialogActions sx={{ p: 3, borderTop: "1px solid #e0e0e0" }}>
             <Button onClick={() => setDialogOpen(false)} variant="outlined">
               Close
             </Button>
@@ -1784,8 +2213,8 @@ const AdminDashboard = () => {
                 handleDownloadHallTicket(selectedStudent.registrationCode);
               }}
               sx={{
-                bgcolor: '#667eea',
-                '&:hover': { bgcolor: '#5a6fd8' }
+                bgcolor: "#667eea",
+                "&:hover": { bgcolor: "#5a6fd8" },
               }}
               startIcon={<DownloadIcon />}
             >
@@ -1798,8 +2227,8 @@ const AdminDashboard = () => {
                 setTimeout(() => handleDeleteStudent(selectedStudent._id), 300);
               }}
               sx={{
-                bgcolor: '#f44336',
-                '&:hover': { bgcolor: '#d32f2f' }
+                bgcolor: "#f44336",
+                "&:hover": { bgcolor: "#d32f2f" },
               }}
               startIcon={<DeleteIcon />}
             >
@@ -1807,12 +2236,249 @@ const AdminDashboard = () => {
             </Button>
           </DialogActions>
         </Dialog>
+
+        {/* WhatsApp Contact Dialog */}
+        <Dialog
+          open={whatsappDialogOpen}
+          onClose={handleCloseWhatsAppDialog}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: { borderRadius: 3 },
+          }}
+        >
+          <DialogTitle sx={{ borderBottom: "1px solid #e0e0e0" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Avatar sx={{ bgcolor: "#25D366" }}>
+                <WhatsAppIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="h6">Connect with Developer</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Get instant help on WhatsApp
+                </Typography>
+              </Box>
+            </Box>
+          </DialogTitle>
+          <DialogContent sx={{ p: 3 }}>
+            <Box sx={{ textAlign: "center", mb: 3 }}>
+              <Avatar
+                sx={{
+                  width: 80,
+                  height: 80,
+                  bgcolor: alpha("#25D366", 0.1),
+                  color: "#25D366",
+                  fontSize: 40,
+                  mx: "auto",
+                  mb: 2,
+                }}
+              >
+                <SupportIcon fontSize="large" />
+              </Avatar>
+              <Typography variant="h6" gutterBottom>
+                {DEVELOPER_NAME}
+              </Typography>
+              <Typography variant="body1" color="text.secondary" gutterBottom>
+                System Developer
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                Available for technical support and assistance
+              </Typography>
+            </Box>
+
+            <Box sx={{ bgcolor: "#f9f9f9", p: 2.5, borderRadius: 2, mb: 3 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+              >
+                <Avatar sx={{ bgcolor: "#25D366", width: 36, height: 36 }}>
+                  <WhatsAppIcon />
+                </Avatar>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body1" fontWeight={600}>
+                    WhatsApp Number
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {DEVELOPER_WHATSAPP_NUMBER}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Avatar sx={{ bgcolor: "#667eea", width: 36, height: 36 }}>
+                  <PersonIcon />
+                </Avatar>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="body1" fontWeight={600}>
+                    Quick Message Options
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Choose a preset message or type your own
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="subtitle2" gutterBottom>
+                Quick Messages:
+              </Typography>
+              <Grid container spacing={1} sx={{ mb: 2 }}>
+                <Grid item xs={12} sm={6}>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={() =>
+                      handleSendWhatsAppMessage(
+                        "Hello, I need technical assistance with the admin dashboard.",
+                      )
+                    }
+                    sx={{ borderRadius: 2, textTransform: "none" }}
+                  >
+                    Technical Issue
+                  </Button>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={() =>
+                      handleSendWhatsAppMessage(
+                        "Hello, I have a feature request for the PPMHSS system.",
+                      )
+                    }
+                    sx={{ borderRadius: 2, textTransform: "none" }}
+                  >
+                    Feature Request
+                  </Button>
+                </Grid>
+              </Grid>
+              <Button
+                variant="outlined"
+                fullWidth
+                onClick={() => handleSendWhatsAppMessage()}
+                sx={{ borderRadius: 2, textTransform: "none" }}
+              >
+                Custom Message
+              </Button>
+            </Box>
+
+            <Alert severity="info" sx={{ borderRadius: 2 }}>
+              <Typography variant="body2">
+                The developer typically responds within a few hours. Please
+                describe your issue clearly for faster resolution.
+              </Typography>
+            </Alert>
+          </DialogContent>
+          <DialogActions sx={{ p: 3, borderTop: "1px solid #e0e0e0" }}>
+            <Button onClick={handleCloseWhatsAppDialog} variant="outlined">
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => handleSendWhatsAppMessage()}
+              startIcon={<WhatsAppIcon />}
+              sx={{
+                bgcolor: "#25D366",
+                "&:hover": { bgcolor: "#128C7E" },
+              }}
+            >
+              Open WhatsApp
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Container>
+
+      {/* Floating WhatsApp Button */}
+      <Fab
+        color="primary"
+        aria-label="whatsapp-help"
+        onClick={handleOpenWhatsAppDialog}
+        sx={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          bgcolor: "#25D366",
+          color: "white",
+          width: 60,
+          height: 60,
+          "&:hover": {
+            bgcolor: "#128C7E",
+            transform: "scale(1.1)",
+          },
+          transition: "all 0.3s ease",
+          boxShadow: "0 4px 20px rgba(37, 211, 102, 0.3)",
+        }}
+      >
+        <WhatsAppIcon />
+      </Fab>
+
+      {/* Footer with Contact Info */}
+      <Box
+        component="footer"
+        sx={{
+          mt: 4,
+          py: 3,
+          borderTop: "1px solid #e0e0e0",
+          background: "white",
+        }}
+      >
+        <Container maxWidth="xl">
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} sm={4}>
+              <Box sx={{ textAlign: { xs: "center", sm: "left" } }}>
+                <Typography variant="body2" fontWeight={500} gutterBottom>
+                  PPMHSS Kottukkara
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Kottukkara, Kondotty
+                </Typography>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <Box sx={{ textAlign: "center" }}>
+                <Button
+                  variant="text"
+                  startIcon={<WhatsAppIcon />}
+                  onClick={handleOpenWhatsAppDialog}
+                  sx={{
+                    color: "#25D366",
+                    textTransform: "none",
+                    fontWeight: 600,
+                  }}
+                >
+                  Contact Developer
+                </Button>
+              </Box>
+            </Grid>
+
+            <Grid item xs={12} sm={4}>
+              <Box sx={{ textAlign: { xs: "center", sm: "right" } }}>
+                <Typography variant="caption" color="text.secondary">
+                  Developed by <strong>{DEVELOPER_NAME}</strong>
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block", mt: 0.5 }}
+                >
+                  © {new Date().getFullYear()} PPMHSS Student Registration
+                  System
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </Container>
+      </Box>
 
       <style jsx>{`
         @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
         }
       `}</style>
     </Box>

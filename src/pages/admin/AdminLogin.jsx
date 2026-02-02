@@ -40,7 +40,7 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post('https://ppmhss-student-registration-backend.onrender.com/api/admin/login', formData);
+      const response = await axios.post('https://apinmea.oxiumev.com/api/admin/login', formData);
       
       if (response.data.success) {
         // Store token and admin data
