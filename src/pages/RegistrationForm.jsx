@@ -109,8 +109,8 @@ const RegistrationForm = () => {
       setLoadingCodes(true);
       const [appNoResponse, regCodeResponse] = await Promise.all([
         // ✅ Use relative paths with proxy
-        axios.get('/api/students/next-application-no'),
-        axios.get('/api/students/next-registration-code')
+        axios.get('https://ppmhss-student-registration-backend.onrender.com/api/students/next-application-no'),
+        axios.get('https://ppmhss-student-registration-backend.onrender.com/api/students/next-registration-code')
       ]);
       
       if (appNoResponse.data.success) {
@@ -174,7 +174,7 @@ const RegistrationForm = () => {
     try {
       console.log('Submitting data:', data);
       // ✅ Use relative path with proxy
-      const response = await axios.post('/api/students/register', data);
+      const response = await axios.post('https://ppmhss-student-registration-backend.onrender.com/api/students/register', data);
       
       if (response.data.success) {
         const { applicationNo, registrationCode, name } = response.data.data;

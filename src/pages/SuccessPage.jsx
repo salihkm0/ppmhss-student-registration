@@ -82,7 +82,7 @@ const SuccessPage = () => {
   const handleDownloadHallTicket = () => {
     // ✅ Use relative path with proxy
     window.open(
-      `/api/students/${registrationData.registrationCode}/hallticket/download`,
+      `https://ppmhss-student-registration-backend.onrender.com/api/students/${registrationData.registrationCode}/hallticket/download`,
       '_blank'
     );
   };
@@ -90,7 +90,7 @@ const SuccessPage = () => {
   const handlePreviewHallTicket = () => {
     // ✅ Use relative path with proxy
     window.open(
-      `/api/students/${registrationData.registrationCode}/hallticket/preview`,
+      `https://ppmhss-student-registration-backend.onrender.com/api/students/${registrationData.registrationCode}/hallticket/preview`,
       '_blank'
     );
   };
