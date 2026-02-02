@@ -105,7 +105,7 @@ const StudentLookup = () => {
             Check Registration Status
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Enter your registration code to view your application details and download hall ticket
+            Enter your registration number to view your application details and download hall ticket
           </Typography>
         </Box>
 
@@ -116,7 +116,7 @@ const StudentLookup = () => {
             value={registrationCode}
             onChange={(e) => setRegistrationCode(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Enter your registration code (e.g., PPM1001)"
+            placeholder="Enter your registration no. (e.g., PPM1001)"
             InputProps={{
               startAdornment: (
                 <SearchIcon sx={{ mr: 1, color: "action.active" }} />
@@ -358,7 +358,7 @@ const StudentLookup = () => {
 
         <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: "divider" }}>
           <Typography variant="body2" color="text.secondary" align="center">
-            Don't have a registration code?{" "}
+            Don't have a registration number?{" "}
             <Button variant="text" size="small" href="/register" color="primary">
               Register now
             </Button>
