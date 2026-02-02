@@ -33,6 +33,9 @@ const StudentLookup = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Remove the apiUrl variable since we'll use relative paths with proxy
+  // const apiUrl = import.meta.env.VITE_API_URL;
+
   const handleSearch = async () => {
     if (!registrationCode.trim()) {
       toast.error("Please enter a registration code");
@@ -45,7 +48,8 @@ const StudentLookup = () => {
 
     try {
       const response = await axios.post(
-        "http://13.127.187.19:5010/api/students/verify",
+        // ✅ Use relative path with proxy
+        '/api/students/verify',
         {
           registrationCode: registrationCode.trim().toUpperCase(),
         },
@@ -78,6 +82,24 @@ const StudentLookup = () => {
       return "success";
     }
     return "default";
+  };
+
+  // Function to handle hall ticket preview
+  const handlePreviewHallTicket = () => {
+    // ✅ Use relative path with proxy
+    window.open(
+      `/api/students/${student.registrationCode}/hallticket/preview`,
+      "_blank",
+    );
+  };
+
+  // Function to handle hall ticket download
+  const handleDownloadHallTicket = () => {
+    // ✅ Use relative path with proxy
+    window.open(
+      `/api/students/${student.registrationCode}/hallticket/download`,
+      "_blank",
+    );
   };
 
   return (
@@ -201,23 +223,25 @@ const StudentLookup = () => {
                         Room No
                       </Typography>
                       <Typography variant="body1" fontWeight="bold">
-                        {student.roomNo}
+                        {student.roomNo || "Not assigned yet"}
                       </Typography>
                     </Box>
                   </Box>
                 </Grid>
                 
-                {/* <Grid item xs={12}>
-                  <Box sx={{ mb: 2 }}>
-                    <Chip
-                      icon={<RoomIcon />}
-                      label={`Room: ${student.roomNo}, Seat: ${student.seatNo}`}
-                      color={getRoomStatusColor(student.roomNo, student.seatNo)}
-                      variant="outlined"
-                      sx={{ fontWeight: "bold" }}
-                    />
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                    <SeatIcon sx={{ mr: 1, color: "action.active" }} />
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">
+                        Seat No
+                      </Typography>
+                      <Typography variant="body1" fontWeight="bold">
+                        {student.seatNo || "Not assigned yet"}
+                      </Typography>
+                    </Box>
                   </Box>
-                </Grid> */}
+                </Grid>
                 
                 <Grid item xs={12} md={6}>
                   <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
@@ -293,46 +317,40 @@ const StudentLookup = () => {
                       flexWrap: "wrap",
                     }}
                   >
-                    {/* <Button
-                      variant="contained"
+                    <Button
+                      variant="outlined"
                       color="primary"
                       startIcon={<VisibilityIcon />}
-                      onClick={() =>
-                        window.open(
-                          `http://13.127.187.19:5010/api/students/${student.registrationCode}/hallticket/preview`,
-                          "_blank",
-                        )
-                      }
+                      onClick={handlePreviewHallTicket}
                       size="large"
+                      sx={{ display: 'none' }} // Hidden for now
                     >
                       Preview Hall Ticket
-                    </Button> */}
+                    </Button>
                     <Button
                       variant="contained"
                       color="success"
                       startIcon={<DownloadIcon />}
-                      onClick={() =>
-                        window.open(
-                          `http://13.127.187.19:5010/api/students/${student.registrationCode}/hallticket/download`,
-                          "_blank",
-                        )
-                      }
+                      onClick={handleDownloadHallTicket}
                       size="large"
                     >
-                      Download & Print
+                      Download Hall Ticket
                     </Button>
                   </Box>
                 </Grid>
                 
                 {/* Important Note */}
-                {/* <Grid item xs={12}>
+                <Grid item xs={12}>
                   <Alert severity="info" sx={{ mt: 2 }}>
                     <Typography variant="body2">
-                      <strong>Important:</strong> Please note your Room No ({student.roomNo}) and Seat No ({student.seatNo}). 
-                      You must report to Room {student.roomNo} at seat {student.seatNo} for the examination.
+                      <strong>Important:</strong> 
+                      {student.roomNo && student.seatNo 
+                        ? ` Please note your Room No (${student.roomNo}) and Seat No (${student.seatNo}). You must report to Room ${student.roomNo} at seat ${student.seatNo} for the examination.`
+                        : " Room and seat numbers will be assigned soon. Please check back later for hall ticket details."
+                      }
                     </Typography>
                   </Alert>
-                </Grid> */}
+                </Grid>
               </Grid>
             </CardContent>
           </Card>

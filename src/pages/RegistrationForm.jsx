@@ -94,19 +94,23 @@ const RegistrationForm = () => {
     },
   });
 
+  // Remove the apiUrl variable since we'll use relative paths with proxy
+  // const apiUrl = import.meta.env.VITE_API_URL;
+
   const steps = [
     { title: 'Personal Info', icon: <PersonIcon /> },
     { title: 'Academic Info', icon: <SchoolIcon /> },
     { title: 'Contact Info', icon: <PhoneIcon /> },
   ];
 
-  // Fetch next application number and registration code
+  // Fetch next application number and registration code - UPDATED FUNCTION
   const fetchNextApplicationNo = async () => {
     try {
       setLoadingCodes(true);
       const [appNoResponse, regCodeResponse] = await Promise.all([
-        axios.get('http://13.127.187.19:5010/api/students/next-application-no'),
-        axios.get('http://13.127.187.19:5010/api/students/next-registration-code')
+        // ✅ Use relative paths with proxy
+        axios.get('/api/students/next-application-no'),
+        axios.get('/api/students/next-registration-code')
       ]);
       
       if (appNoResponse.data.success) {
@@ -164,11 +168,13 @@ const RegistrationForm = () => {
     toast.success('Codes refreshed!');
   };
 
+  // UPDATED onSubmit function
   const onSubmit = async (data) => {
     setLoading(true);
     try {
       console.log('Submitting data:', data);
-      const response = await axios.post('http://13.127.187.19:5010/api/students/register', data);
+      // ✅ Use relative path with proxy
+      const response = await axios.post('/api/students/register', data);
       
       if (response.data.success) {
         const { applicationNo, registrationCode, name } = response.data.data;
