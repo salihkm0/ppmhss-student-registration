@@ -356,7 +356,7 @@ const StudentLookup = () => {
         <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: "divider" }}>
           <Typography variant="body2" color="text.secondary" align="center">
             Don't have a registration number?{" "}
-            <Button variant="text" size="small" href="/register" color="primary">
+            <Button variant="text" size="small" href="/" color="primary">
               Register now
             </Button>
           </Typography>
