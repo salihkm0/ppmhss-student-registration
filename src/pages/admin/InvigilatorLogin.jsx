@@ -16,18 +16,18 @@ import {
 } from '@mui/material';
 import {
   Lock as LockIcon,
-  Person as PersonIcon,
+  Email as EmailIcon,
   Visibility as VisibilityIcon,
   VisibilityOff as VisibilityOffIcon,
-  Dashboard as DashboardIcon,
   School as SchoolIcon,
   ArrowBack as ArrowBackIcon,
+  AssignmentInd as InvigilatorIcon,
 } from '@mui/icons-material';
 
-const AdminLogin = () => {
+const InvigilatorLogin = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -44,8 +44,8 @@ const AdminLogin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.username || !formData.password) {
-      setError('Please enter both username and password');
+    if (!formData.email || !formData.password) {
+      setError('Please enter both email and password');
       return;
     }
 
@@ -53,16 +53,16 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      const response = await axios.post('https://apinmea.oxiumev.com/api/admin/login', formData);
+      const response = await axios.post('https://apinmea.oxiumev.com/api/invigilator/login', formData);
       
       if (response.data.success) {
-        // Store admin token and data
-        localStorage.setItem('adminToken', response.data.token);
-        localStorage.setItem('adminData', JSON.stringify(response.data.admin));
-        localStorage.setItem('adminRole', response.data.admin.role);
+        // Store invigilator token and data
+        localStorage.setItem('invigilatorToken', response.data.token);
+        localStorage.setItem('invigilatorData', JSON.stringify(response.data.invigilator));
+        localStorage.setItem('invigilatorRole', 'invigilator');
         
         toast.success('Login successful!');
-        navigate('/admin/dashboard');
+        navigate('/invigilator/dashboard');
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -78,12 +78,12 @@ const AdminLogin = () => {
     <Container maxWidth="sm" sx={{ py: 8 }}>
       <Paper elevation={3} sx={{ p: { xs: 3, md: 5 }, borderRadius: 3 }}>
         <Box sx={{ textAlign: 'center', mb: 4 }}>
-          <DashboardIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+          <InvigilatorIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
           <Typography variant="h4" component="h1" gutterBottom>
-            Admin Portal
+            Invigilator Portal
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            PPMHSS Kottukkara - Examination Management System
+            PPMHSS Kottukkara - Exam Room Management
           </Typography>
         </Box>
 
@@ -97,16 +97,17 @@ const AdminLogin = () => {
           <Box sx={{ mb: 3 }}>
             <TextField
               fullWidth
-              label="Username or Email"
-              name="username"
-              value={formData.username}
+              label="Email Address"
+              name="email"
+              type="email"
+              value={formData.email}
               onChange={handleChange}
               required
               disabled={loading}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <PersonIcon />
+                    <EmailIcon />
                   </InputAdornment>
                 ),
               }}
@@ -152,7 +153,7 @@ const AdminLogin = () => {
             disabled={loading}
             sx={{ py: 1.5, mb: 3 }}
           >
-            {loading ? 'Logging in...' : 'Login as Admin'}
+            {loading ? 'Logging in...' : 'Login as Invigilator'}
           </Button>
         </form>
 
@@ -172,20 +173,20 @@ const AdminLogin = () => {
           <Grid item xs={12} md={6}>
             <Button
               component={Link}
-              to="/invigilator/login"
+              to="/admin/login"
               variant="outlined"
               fullWidth
               startIcon={<SchoolIcon />}
               disabled={loading}
             >
-              Invigilator Login
+              Admin Login
             </Button>
           </Grid>
         </Grid>
 
         <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: 'divider' }}>
           <Typography variant="body2" color="text.secondary" align="center">
-            <strong>Note:</strong> For security reasons, please log out after use.
+            <strong>Note:</strong> Invigilators can only access assigned rooms.
           </Typography>
         </Box>
       </Paper>
@@ -193,11 +194,11 @@ const AdminLogin = () => {
       {/* Footer */}
       <Box sx={{ mt: 6, textAlign: 'center' }}>
         <Typography variant="caption" color="text.secondary">
-          © {new Date().getFullYear()} PPMHSS Kottukkara | Admin Portal v2.0
+          © {new Date().getFullYear()} PPMHSS Kottukkara | Invigilator Portal v1.0
         </Typography>
       </Box>
     </Container>
   );
 };
 
-export default AdminLogin;
+export default InvigilatorLogin;

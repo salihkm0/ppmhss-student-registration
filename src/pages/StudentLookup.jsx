@@ -47,11 +47,8 @@ const StudentLookup = () => {
     setStudent(null);
 
     try {
-      const response = await axios.post(
-        'https://apinmea.oxiumev.com/api/students/verify',
-        {
-          registrationCode: registrationCode.trim().toUpperCase(),
-        },
+      const response = await axios.get(
+        `https://apinmea.oxiumev.com/api/students/${registrationCode.trim().toUpperCase()}`,
       );
 
       if (response.data.success) {
