@@ -1,418 +1,313 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   Container,
   Paper,
-  TextField,
-  Button,
   Typography,
   Box,
+  Button,
+  Grid,
   Card,
   CardContent,
-  Grid,
   Alert,
   CircularProgress,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  ToggleButton,
-  ToggleButtonGroup,
-} from '@mui/material';
+  Divider,
+  Chip,
+} from "@mui/material";
 import {
-  Search as SearchIcon,
-  Assignment as AssignmentIcon,
+  Download as DownloadIcon,
+  Print as PrintIcon,
+  ArrowBack as ArrowBackIcon,
   Person as PersonIcon,
   School as SchoolIcon,
+  Room as RoomIcon,
+  EventSeat as SeatIcon,
+  Assignment as AssignmentIcon,
   Phone as PhoneIcon,
-  Print as PrintIcon,
-  Download as DownloadIcon,
-  Visibility as VisibilityIcon,
-} from '@mui/icons-material';
-import axios from 'axios';
-import toast from 'react-hot-toast';
+  Home as HomeIcon,
+} from "@mui/icons-material";
+import axios from "axios";
+import toast from "react-hot-toast";
 
 const HallTicketPage = () => {
-  const [searchType, setSearchType] = useState('code'); // 'code' or 'phone'
-  const [registrationCode, setRegistrationCode] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const { code } = useParams();
+  const navigate = useNavigate();
   const [student, setStudent] = useState(null);
-  const [registrations, setRegistrations] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [openDialog, setOpenDialog] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const handleSearchTypeChange = (event, newType) => {
-    if (newType !== null) {
-      setSearchType(newType);
-      setStudent(null);
-      setRegistrations([]);
-      setError('');
-    }
-  };
+  useEffect(() => {
+    fetchStudentDetails();
+  }, [code]);
 
-  const handleSearch = async () => {
-    if (searchType === 'code') {
-      await searchByCode();
-    } else {
-      await searchByPhone();
-    }
-  };
-
-  const searchByCode = async () => {
-    if (!registrationCode.trim()) {
-      toast.error('Please enter a registration code');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    setStudent(null);
-    setRegistrations([]);
-
+  const fetchStudentDetails = async () => {
     try {
-      const response = await axios.post('https://ppmhss-student-registration-backend.onrender.com/api/students/verify', {
-        registrationCode: registrationCode.trim()
-      });
-      
+      setLoading(true);
+      const response = await axios.get(
+        `https://apinmea.oxiumev.com/api/students/${code}`
+      );
+
       if (response.data.success) {
         setStudent(response.data.data);
-        toast.success('Registration found!');
       }
     } catch (error) {
-      console.error('Search error:', error);
-      const errorMessage = error.response?.data?.error || 'Invalid registration code';
-      setError(errorMessage);
-      toast.error(errorMessage);
+      console.error("Error fetching student details:", error);
+      setError("Student not found or invalid registration code");
+      toast.error("Failed to load hall ticket");
     } finally {
       setLoading(false);
     }
   };
 
-  const searchByPhone = async () => {
-    if (!phoneNumber.trim() || !/^\d{10}$/.test(phoneNumber)) {
-      toast.error('Please enter a valid 10-digit phone number');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    setStudent(null);
-    setRegistrations([]);
-
-    try {
-      const response = await axios.post('https://ppmhss-student-registration-backend.onrender.com/api/students/hallticket/by-phone', {
-        phoneNo: phoneNumber.trim()
-      });
-      
-      if (response.data.success) {
-        setRegistrations(response.data.data);
-        if (response.data.data.length === 1) {
-          setOpenDialog(true);
-        } else {
-          toast.success(`${response.data.count} registrations found!`);
-        }
-      }
-    } catch (error) {
-      console.error('Phone search error:', error);
-      const errorMessage = error.response?.data?.error || 'No registrations found';
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
+  const handlePrint = () => {
+    window.print();
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
+  const handleDownload = () => {
+    window.open(
+      `https://apinmea.oxiumev.com/api/students/${code}/hallticket/download`,
+      "_blank"
+    );
   };
 
-  const openHallTicket = (code, type = 'preview') => {
-    const baseUrl = 'https://ppmhss-student-registration-backend.onrender.com';
-    const url = `${baseUrl}/api/students/${code}/hallticket/${type}`;
-    window.open(url, '_blank');
-  };
+  if (loading) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4, textAlign: 'center' }}>
+        <CircularProgress size={60} />
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          Loading Hall Ticket...
+        </Typography>
+      </Container>
+    );
+  }
 
-  const handleDialogClose = () => {
-    setOpenDialog(false);
-  };
-
-  const handleDialogConfirm = () => {
-    if (registrations.length === 1) {
-      openHallTicket(registrations[0].registrationCode, 'preview');
-    }
-    setOpenDialog(false);
-  };
+  if (error || !student) {
+    return (
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error || "Student not found"}
+        </Alert>
+        <Button
+          variant="contained"
+          startIcon={<ArrowBackIcon />}
+          onClick={() => navigate('/lookup')}
+        >
+          Back to Student Lookup
+        </Button>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
-      <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, borderRadius: 3 }}>
+      <Paper elevation={3} sx={{ p: { xs: 2, md: 4 }, borderRadius: 3, mb: 3 }}>
         <Box sx={{ textAlign: 'center', mb: 4 }}>
           <AssignmentIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
-          <Typography variant="h4" component="h1" gutterBottom>
-            Download Hall Ticket
+          <Typography variant="h4" component="h1" gutterBottom color="primary">
+            Hall Ticket
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Get your exam admit card for NMEA TENDER SCHOLAR 26
+            NMEA TENDER SCHOLAR 26 - Examination Hall Ticket
           </Typography>
         </Box>
 
-        {/* Search Type Toggle */}
-        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
-          <ToggleButtonGroup
-            value={searchType}
-            exclusive
-            onChange={handleSearchTypeChange}
-            aria-label="search type"
-          >
-            <ToggleButton value="code" aria-label="by registration code">
-              By Registration Code
-            </ToggleButton>
-            <ToggleButton value="phone" aria-label="by phone number">
-              By Phone Number
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Box>
+        {/* Student Information */}
+        <Card sx={{ mb: 3, border: '2px solid #2563eb' }}>
+          <CardContent>
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <Box sx={{ textAlign: 'center', mb: 3 }}>
+                  <Typography variant="h5" fontWeight={600} color="primary">
+                    {student.name}
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary">
+                    Son/Daughter of {student.fatherName}
+                  </Typography>
+                </Box>
+              </Grid>
 
-        {/* Search Input */}
-        <Box sx={{ mb: 4 }}>
-          {searchType === 'code' ? (
-            <TextField
-              fullWidth
-              label="Registration Code"
-              value={registrationCode}
-              onChange={(e) => setRegistrationCode(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Enter your registration code (e.g., PPM1001)"
-              InputProps={{
-                startAdornment: <AssignmentIcon sx={{ mr: 1, color: 'action.active' }} />,
-              }}
-            />
-          ) : (
-            <TextField
-              fullWidth
-              label="Phone Number"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Enter your 10-digit phone number"
-              InputProps={{
-                startAdornment: <PhoneIcon sx={{ mr: 1, color: 'action.active' }} />,
-              }}
-            />
-          )}
-          
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <AssignmentIcon sx={{ mr: 2, color: 'primary.main' }} />
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      Registration Code
+                    </Typography>
+                    <Typography variant="h6" fontWeight={600}>
+                      {student.registrationCode}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <SchoolIcon sx={{ mr: 2, color: 'primary.main' }} />
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      School & Class
+                    </Typography>
+                    <Typography variant="body1">
+                      {student.schoolName} (Class {student.studyingClass})
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <RoomIcon sx={{ mr: 2, color: 'primary.main' }} />
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      Exam Room
+                    </Typography>
+                    <Typography variant="h5" fontWeight={600} color="primary">
+                      Room {student.roomNo}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <SeatIcon sx={{ mr: 2, color: 'primary.main' }} />
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      Seat Number
+                    </Typography>
+                    <Typography variant="h5" fontWeight={600} color="primary">
+                      {student.seatNo}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <PersonIcon sx={{ mr: 2, color: 'primary.main' }} />
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      Gender & Medium
+                    </Typography>
+                    <Typography variant="body1">
+                      {student.gender} | {student.medium}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <PhoneIcon sx={{ mr: 2, color: 'primary.main' }} />
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      Phone Number
+                    </Typography>
+                    <Typography variant="body1">
+                      {student.phoneNo}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
+        {/* Exam Details */}
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom color="primary">
+              Examination Details
+            </Typography>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={6}>
+                <Typography variant="body2" color="textSecondary">
+                  Exam Name
+                </Typography>
+                <Typography variant="body1" fontWeight={600}>
+                  NMEA TENDER SCHOLAR 26
+                </Typography>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Typography variant="body2" color="textSecondary">
+                  Exam Date
+                </Typography>
+                <Typography variant="body1" fontWeight={600}>
+                  01-03-2026
+                </Typography>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Typography variant="body2" color="textSecondary">
+                  Exam Time
+                </Typography>
+                <Typography variant="body1" fontWeight={600}>
+                  10:00 AM - 11:30 AM
+                </Typography>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Typography variant="body2" color="textSecondary">
+                  Exam Center
+                </Typography>
+                <Typography variant="body1" fontWeight={600}>
+                  PPMHSS Kottukkara, Kondotty
+                </Typography>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
+        {/* Important Instructions */}
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          <Typography variant="body2" fontWeight={600}>
+            Important Instructions:
+          </Typography>
+          <ul style={{ margin: '8px 0 0 0', paddingLeft: '20px' }}>
+            <li>Bring this hall ticket and original Aadhaar card</li>
+            <li>Report to the exam center 30 minutes before exam time</li>
+            <li>No electronic devices allowed in the exam hall</li>
+            <li>Follow all COVID-19 safety protocols</li>
+            <li>Hall ticket is mandatory for entry</li>
+          </ul>
+        </Alert>
+
+        {/* Action Buttons */}
+        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 4 }}>
           <Button
             variant="contained"
-            fullWidth
+            startIcon={<PrintIcon />}
+            onClick={handlePrint}
             size="large"
-            onClick={handleSearch}
-            disabled={loading}
-            sx={{ mt: 2 }}
           >
-            {loading ? <CircularProgress size={24} /> : 'Search'}
+            Print Hall Ticket
           </Button>
-        </Box>
-
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
-
-        {/* Single Student Result */}
-        {student && (
-          <Card variant="outlined">
-            <CardContent>
-              <Typography variant="h6" gutterBottom color="primary">
-                Student Found
-              </Typography>
-              
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <PersonIcon sx={{ mr: 1, color: 'action.active' }} />
-                    <Box>
-                      <Typography variant="body2" color="textSecondary">
-                        Candidate Name
-                      </Typography>
-                      <Typography variant="body1" fontWeight="bold">
-                        {student.name}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                
-                <Grid item xs={12} md={6}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <AssignmentIcon sx={{ mr: 1, color: 'action.active' }} />
-                    <Box>
-                      <Typography variant="body2" color="textSecondary">
-                        Registration Code
-                      </Typography>
-                      <Typography variant="body1" fontWeight="bold" fontFamily="monospace">
-                        {student.registrationCode}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                
-                <Grid item xs={12} md={6}>
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="textSecondary">
-                      Application Number
-                    </Typography>
-                    <Typography variant="body1" fontFamily="monospace">
-                      {student.applicationNo}
-                    </Typography>
-                  </Box>
-                </Grid>
-                
-                <Grid item xs={12} md={6}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                    <SchoolIcon sx={{ mr: 1, color: 'action.active' }} />
-                    <Box>
-                      <Typography variant="body2" color="textSecondary">
-                        Class
-                      </Typography>
-                      <Typography variant="body1">
-                        Class {student.studyingClass} - {student.medium}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 3, flexWrap: 'wrap' }}>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      startIcon={<VisibilityIcon />}
-                      onClick={() => openHallTicket(student.registrationCode, 'preview')}
-                    >
-                      Preview Hall Ticket
-                    </Button>
-                    <Button
-                      variant="contained"
-                      color="success"
-                      startIcon={<DownloadIcon />}
-                      onClick={() => openHallTicket(student.registrationCode, 'download')}
-                    >
-                      Download & Print
-                    </Button>
-                  </Box>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Multiple Registrations Result */}
-        {registrations.length > 1 && (
-          <Card variant="outlined">
-            <CardContent>
-              <Typography variant="h6" gutterBottom color="primary">
-                Multiple Registrations Found
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Select a registration to download hall ticket:
-              </Typography>
-              
-              <List>
-                {registrations.map((reg, index) => (
-                  <ListItem key={index} divider={index < registrations.length - 1}>
-                    <ListItemText
-                      primary={reg.name}
-                      secondary={
-                        <>
-                          Application No: {reg.applicationNo} | Class: {reg.class}
-                        </>
-                      }
-                    />
-                    <ListItemSecondaryAction>
-                      <IconButton 
-                        edge="end" 
-                        aria-label="preview"
-                        onClick={() => openHallTicket(reg.registrationCode, 'preview')}
-                        sx={{ mr: 1 }}
-                        title="Preview"
-                      >
-                        <VisibilityIcon />
-                      </IconButton>
-                      <IconButton 
-                        edge="end" 
-                        aria-label="download"
-                        onClick={() => openHallTicket(reg.registrationCode, 'download')}
-                        title="Download"
-                      >
-                        <DownloadIcon />
-                      </IconButton>
-                    </ListItemSecondaryAction>
-                  </ListItem>
-                ))}
-              </List>
-            </CardContent>
-          </Card>
-        )}
-
-        <Box sx={{ mt: 4, pt: 3, borderTop: 1, borderColor: 'divider' }}>
-          <Typography variant="body2" color="text.secondary" align="center">
-            Don't have a registration?{' '}
-            <Button 
-              variant="text" 
-              size="small" 
-              href="/"
-              color="primary"
-            >
-              Register now
-            </Button>
-            {' '}or{' '}
-            <Button 
-              variant="text" 
-              size="small" 
-              href="/lookup"
-              color="primary"
-            >
-              Check registration status
-            </Button>
-          </Typography>
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            onClick={handleDownload}
+            size="large"
+          >
+            Download PDF
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<ArrowBackIcon />}
+            onClick={() => navigate('/lookup')}
+            size="large"
+          >
+            Back to Search
+          </Button>
         </Box>
       </Paper>
 
-      {/* Dialog for single registration */}
-      <Dialog open={openDialog} onClose={handleDialogClose}>
-        <DialogTitle>Registration Found</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Found one registration for {phoneNumber}. Do you want to view the hall ticket?
-          </Typography>
-          {registrations[0] && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="body2">
-                <strong>Name:</strong> {registrations[0].name}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Registration Code:</strong> {registrations[0].registrationCode}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Class:</strong> {registrations[0].class}
-              </Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDialogClose}>Cancel</Button>
-          <Button onClick={handleDialogConfirm} variant="contained" color="primary">
-            View Hall Ticket
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Footer */}
+      <Box sx={{ textAlign: 'center', mt: 4, pt: 3, borderTop: '1px solid #e0e0e0' }}>
+        <Typography variant="body2" color="text.secondary">
+          For any queries, contact: +91 9947073499, +91 8547645640
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+          © {new Date().getFullYear()} PPMHSS Kottukkara - All rights reserved
+        </Typography>
+      </Box>
     </Container>
   );
 };

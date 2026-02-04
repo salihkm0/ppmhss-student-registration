@@ -9,17 +9,15 @@ import {
   Grid,
   Container,
   Typography,
-  Paper,
-  Button,
-  Box,
   Card,
   CardContent,
+  Button,
+  Box,
   Divider,
   CircularProgress,
   InputAdornment,
   FormControl,
   FormHelperText,
-  Select,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -47,7 +45,6 @@ import {
   CheckCircle as CheckCircleIcon,
   HomeWork as HomeWorkIcon,
   Close as CloseIcon,
-  Chat as ChatIcon,
 } from '@mui/icons-material';
 
 const RegistrationForm = () => {
@@ -66,7 +63,6 @@ const RegistrationForm = () => {
     trigger,
     watch,
     reset,
-    setValue,
   } = useForm({
     defaultValues: {
       name: '',
@@ -74,7 +70,7 @@ const RegistrationForm = () => {
       fatherName: '',
       aadhaarNo: '',
       schoolName: '',
-      studyingClass: '',
+      studyingClass: '', // Fixed to Class 7 only
       medium: '',
       phoneNo: '',
       address: {
@@ -365,7 +361,6 @@ const RegistrationForm = () => {
               <Grid item xs={12}>
                 <FormControl fullWidth error={!!errors.studyingClass}>
                   <TextField
-                    
                     select
                     label="Class Studying *"
                     {...register('studyingClass', { required: 'Class is required' })}
@@ -378,13 +373,10 @@ const RegistrationForm = () => {
                         </InputAdornment>
                       ),
                     }}
+                    value="7"
+                    // disabled
                   >
                     <MenuItem value="7">Class 7</MenuItem>
-                    {/* <MenuItem value="8">Class 8</MenuItem>
-                    <MenuItem value="9">Class 9</MenuItem>
-                    <MenuItem value="10">Class 10</MenuItem>
-                    <MenuItem value="11">Class 11</MenuItem>
-                    <MenuItem value="12">Class 12</MenuItem> */}
                   </TextField>
                   {errors.studyingClass && <FormHelperText>{errors.studyingClass.message}</FormHelperText>}
                 </FormControl>
@@ -576,7 +568,7 @@ const RegistrationForm = () => {
                 <TextField
                   fullWidth
                   label="Village *"
-                  {...register('address.village', { required: 'Village is required' })}
+                  {...register('address.village', { required: 'Village name is required' })}
                   error={!!errors.address?.village}
                   helperText={errors.address?.village?.message}
                   InputProps={{
@@ -662,75 +654,144 @@ const RegistrationForm = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Header Section */}
-      <Card sx={{ mb: 3, borderRadius: 2, border: 1, borderColor: 'divider' }}>
-        <CardContent sx={{ p: 2, textAlign: 'center' }}>
-          <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
-            NMEA TENDER SCHOLAR 26
-          </Typography>
-          <Typography variant="subtitle1" gutterBottom sx={{ color: 'text.secondary' }}>
-            Student Registration Form
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-            PPMHSS Kottukkara, Kondotty, Malappuram
-          </Typography>
-        </CardContent>
-      </Card>
+      {/* Header Section with Logos */}
+<Card sx={{ mb: 3, borderRadius: 2, border: 1, borderColor: 'divider' }}>
+  <CardContent sx={{ p: 2 }}>
+    {/* Mobile Layout - Logos on top */}
+    <Box sx={{ 
+      display: { xs: 'flex', sm: 'none' }, 
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: 2,
+      mb: 3 
+    }}>
+      {/* Logos Row for Mobile */}
+      {/* <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        maxWidth: 300
+      }}>
 
-      {/* Application Codes */}
-      {/* <Card sx={{ mb: 3, borderRadius: 2, border: 1, borderColor: 'divider' }}>
-        <CardContent sx={{ p: 2 }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={5}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <AssignmentIcon fontSize="small" color="primary" />
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Next Application No
-                  </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    {loadingCodes ? (
-                      <CircularProgress size={16} />
-                    ) : (
-                      nextApplicationNo
-                    )}
-                  </Typography>
-                </Box>
-              </Box>
-            </Grid>
-            
-            <Grid item xs={12} sm={5}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <BadgeIcon fontSize="small" color="primary" />
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Next Registration Code
-                  </Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    {loadingCodes ? (
-                      <CircularProgress size={16} />
-                    ) : (
-                      nextRegistrationCode
-                    )}
-                  </Typography>
-                </Box>
-              </Box>
-            </Grid>
-            
-            <Grid item xs={12} sm={2}>
-              <Button
-                size="small"
-                onClick={handleRefreshCodes}
-                disabled={loadingCodes}
-                fullWidth
-                sx={{ textTransform: 'none' }}
-              >
-                Refresh
-              </Button>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card> */}
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center',
+          flex: 1
+        }}>
+          <Box
+            component="img"
+            src="https://res.cloudinary.com/dmjqgjcut/image/upload/v1769946977/school-logo_uugskb.jpg"
+            alt="School Logo"
+            sx={{
+              width: 70,
+              height: 70,
+              objectFit: 'contain'
+            }}
+          />
+        </Box>
+
+
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center',
+          flex: 1
+        }}>
+          <Box
+            component="img"
+            src="https://res.cloudinary.com/dmjqgjcut/image/upload/v1769946976/50th_t44gva.jpg"
+            alt="50th Anniversary Logo"
+            sx={{
+              width: 70,
+              height: 70,
+              objectFit: 'contain'
+            }}
+          />
+        </Box>
+      </Box>
+
+      {/* Title for Mobile */}
+      <Box sx={{ textAlign: 'center' }}>
+        <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
+          NMEA TENDER SCHOLAR 26
+        </Typography>
+        <Typography variant="subtitle1" gutterBottom sx={{ color: 'text.secondary' }}>
+          Student Registration Form
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          PPMHSS Kottukkara, Kondotty, Malappuram
+        </Typography>
+      </Box>
+    </Box> 
+
+    {/* Desktop Layout - Logos on sides */}
+    <Box sx={{ 
+      display: { xs: 'none', sm: 'flex' }, 
+      flexDirection: 'row', 
+      alignItems: 'center', 
+      justifyContent: 'space-between',
+      gap: 2 
+    }}>
+      {/* Left: School Logo */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center',
+        flex: 1 
+      }}>
+        <Box
+          component="img"
+          src="https://res.cloudinary.com/dmjqgjcut/image/upload/v1769946977/school-logo_uugskb.jpg"
+          alt="School Logo"
+          sx={{
+            width: 80,
+            height: 80,
+            objectFit: 'contain'
+          }}
+        />
+      </Box>
+
+      {/* Center: Title */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center',
+        flex: 2 
+      }}>
+        <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
+          NMEA TENDER SCHOLAR 26
+        </Typography>
+        <Typography variant="subtitle1" gutterBottom sx={{ color: 'text.secondary' }}>
+          Student Registration Form
+        </Typography>
+        <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          PPMHSS Kottukkara, Kondotty, Malappuram
+        </Typography>
+      </Box>
+
+      {/* Right: 50th Anniversary Logo */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center',
+        flex: 1 
+      }}>
+        <Box
+          component="img"
+          src="https://res.cloudinary.com/dmjqgjcut/image/upload/v1769946976/50th_t44gva.jpg"
+          alt="50th Anniversary Logo"
+          sx={{
+            width: 80,
+            height: 80,
+            objectFit: 'contain'
+          }}
+        />
+      </Box>
+    </Box>
+  </CardContent>
+</Card>
 
       {/* Main Form */}
       <Card sx={{ borderRadius: 2, border: 1, borderColor: 'divider', mb: 3 }}>
@@ -847,7 +908,7 @@ const RegistrationForm = () => {
       </Card>
 
       {/* Quick Links */}
-      <Box sx={{ mb: 3, textAlign: 'center' }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
         <Button
           variant="outlined"
           onClick={() => navigate('/lookup')}
