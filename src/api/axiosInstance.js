@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // Create axios instance with base URL
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:5010/api', // Your API base URL
+  baseURL: 'https://apinmea.oxiumev.com/api',
   timeout: 10000, // 10 seconds timeout
   headers: {
     'Content-Type': 'application/json',

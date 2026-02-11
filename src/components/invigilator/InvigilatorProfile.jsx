@@ -87,7 +87,7 @@ import toast from "react-hot-toast";
 //       }
 
 //       const response = await axios.put(
-//         "http://localhost:5010/api/invigilator/profile",
+//         "https://apinmea.oxiumev.com/api/invigilator/profile",
 //         updateData,
 //         {
 //           headers: { "x-auth-token": token },

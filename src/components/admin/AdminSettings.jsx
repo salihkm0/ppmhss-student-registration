@@ -108,7 +108,7 @@ const AdminSettings = () => {
       }
 
       const response = await axios.put(
-        "http://localhost:5010/api/admin/profile",
+        "https://apinmea.oxiumev.com/api/admin/profile",
         updateData,
         {
           headers: { "x-auth-token": token },

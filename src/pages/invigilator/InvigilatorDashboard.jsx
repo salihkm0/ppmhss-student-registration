@@ -46,7 +46,7 @@ const InvigilatorDashboard = () => {
         
         // Fetch dashboard data
         const response = await axios.get(
-          "http://localhost:5010/api/invigilator/dashboard",
+          "https://apinmea.oxiumev.com/api/invigilator/dashboard",
           {
             headers: { "x-auth-token": token },
           }

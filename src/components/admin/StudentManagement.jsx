@@ -97,7 +97,7 @@ const StudentManagement = () => {
       };
 
       const response = await axios.get(
-        "http://localhost:5010/api/admin/students",
+        "https://apinmea.oxiumev.com/api/admin/students",
         {
           headers: { "x-auth-token": token },
           params,
@@ -120,7 +120,7 @@ const StudentManagement = () => {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await axios.get(
-        "http://localhost:5010/api/admin/students/room-distribution",
+        "https://apinmea.oxiumev.com/api/admin/students/room-distribution",
         {
           headers: { "x-auth-token": token },
         }
@@ -141,7 +141,7 @@ const StudentManagement = () => {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await axios.get(
-        "http://localhost:5010/api/admin/students/deleted",
+        "https://apinmea.oxiumev.com/api/admin/students/deleted",
         {
           headers: { "x-auth-token": token },
         }
@@ -166,7 +166,7 @@ const StudentManagement = () => {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await axios.delete(
-        `http://localhost:5010/api/admin/students/soft-delete/${studentToDelete.id}`,
+        `https://apinmea.oxiumev.com/api/admin/students/soft-delete/${studentToDelete.id}`,
         {
           headers: { "x-auth-token": token },
           data: { reason: deleteReason },
@@ -197,7 +197,7 @@ const StudentManagement = () => {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await axios.post(
-        `http://localhost:5010/api/admin/students/restore/${studentId}`,
+        `https://apinmea.oxiumev.com/api/admin/students/restore/${studentId}`,
         {},
         {
           headers: { "x-auth-token": token },
@@ -227,7 +227,7 @@ const StudentManagement = () => {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await axios.delete(
-        `http://localhost:5010/api/admin/students/hard-delete/${studentId}`,
+        `https://apinmea.oxiumev.com/api/admin/students/hard-delete/${studentId}`,
         {
           headers: { "x-auth-token": token },
         }
@@ -247,7 +247,7 @@ const StudentManagement = () => {
     try {
       const token = localStorage.getItem("adminToken");
       const params = showDeleted ? { showDeleted: true } : {};
-      const response = await axios.get("http://localhost:5010/api/admin/export", {
+      const response = await axios.get("https://apinmea.oxiumev.com/api/admin/export", {
         headers: { "x-auth-token": token },
         params,
         responseType: "blob",
@@ -278,7 +278,7 @@ const StudentManagement = () => {
 
   const handleDownloadHallTicket = (registrationCode) => {
     window.open(
-      `http://localhost:5010/api/students/${registrationCode}/hallticket/download`,
+      `https://apinmea.oxiumev.com/api/students/${registrationCode}/hallticket/download`,
       "_blank"
     );
   };

@@ -46,7 +46,7 @@ const AdminDashboard = () => {
         
         // Fetch dashboard stats
         const response = await axios.get(
-          "http://localhost:5010/api/admin/dashboard/stats",
+          "https://apinmea.oxiumev.com/api/admin/dashboard/stats",
           {
             headers: { "x-auth-token": token },
           }

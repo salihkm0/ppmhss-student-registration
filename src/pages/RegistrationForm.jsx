@@ -96,8 +96,8 @@ const RegistrationForm = () => {
     try {
       setLoadingCodes(true);
       const [appNoResponse, regCodeResponse] = await Promise.all([
-        axios.get('http://localhost:5010/api/students/next-application-no'),
-        axios.get('http://localhost:5010/api/students/next-registration-code')
+        axios.get('https://apinmea.oxiumev.com/api/students/next-application-no'),
+        axios.get('https://apinmea.oxiumev.com/api/students/next-registration-code')
       ]);
       
       if (appNoResponse.data.success) {
@@ -158,7 +158,7 @@ const RegistrationForm = () => {
     setLoading(true);
     try {
       console.log('Submitting data:', data);
-      const response = await axios.post('http://localhost:5010/api/students/register', data);
+      const response = await axios.post('https://apinmea.oxiumev.com/api/students/register', data);
       
       if (response.data.success) {
         const { applicationNo, registrationCode, name } = response.data.data;
