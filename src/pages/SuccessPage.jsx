@@ -227,20 +227,13 @@ const SuccessPage = () => {
         </Button>
       </Box>
 
-      {/* WhatsApp Support Dialog */}
-      <Dialog
-        open={whatsappDialog}
+      <Dialog 
+        open={whatsappDialog} 
         onClose={() => setWhatsappDialog(false)}
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6">WhatsApp Support</Typography>
           <IconButton onClick={() => setWhatsappDialog(false)} size="small">
             <CloseIcon />
@@ -250,27 +243,44 @@ const SuccessPage = () => {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Contact our support team on WhatsApp for assistance:
           </Typography>
-
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <Button
               variant="outlined"
               color="success"
               startIcon={<WhatsAppIcon />}
-              onClick={() => openWhatsAppSupport("919947073499")}
+              onClick={() => openWhatsApp('919947073499')}
               fullWidth
             >
               99470 73499
             </Button>
-
+            
             <Button
               variant="outlined"
               color="success"
               startIcon={<WhatsAppIcon />}
-              onClick={() => openWhatsAppSupport("918547645640")}
+              onClick={() => openWhatsApp('918547645640')}
               fullWidth
             >
               85476 45640
             </Button>
+
+            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', mt: 1 }}>
+              Connect to the developer for technical support
+            </Typography>
+            
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<WhatsAppIcon />}
+              onClick={() => openWhatsApp('918157024638')}
+              fullWidth
+              sx={{ mt: 1 }}
+            >
+              Muhammed Salih Km
+            </Button>
+            
+            
           </Box>
         </DialogContent>
         <DialogActions>
