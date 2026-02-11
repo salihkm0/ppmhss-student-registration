@@ -62,7 +62,7 @@ const RoomManagement = ({ stats }) => {
       setLoading(true);
       const token = localStorage.getItem('adminToken');
       const response = await axios.get(
-        `https://apinmea.oxiumev.com/api/admin/rooms/stats`,
+        `http://localhost:5010/api/admin/rooms/stats`,
         {
           headers: { "x-auth-token": token },
         }
@@ -110,7 +110,7 @@ const RoomManagement = ({ stats }) => {
     try {
       const token = localStorage.getItem('adminToken');
       const response = await axios.get(
-        `https://apinmea.oxiumev.com/api/students/rooms/${roomNo}`,
+        `http://localhost:5010/api/students/rooms/${roomNo}`,
         {
           headers: { "x-auth-token": token },
           params: { excludeDeleted: true } // Add this parameter
@@ -146,13 +146,13 @@ const RoomManagement = ({ stats }) => {
 
   const handleDownloadAttendanceSheet = (roomNo) => {
     const token = localStorage.getItem('adminToken');
-    const url = `https://apinmea.oxiumev.com/api/admin/room-attendance/${roomNo}/pdf?preview=false&print=true&token=${token}`;
+    const url = `http://localhost:5010/api/admin/room-attendance/${roomNo}/pdf?preview=false&print=true&token=${token}`;
     downloadPDF(url);
   };
 
   const handleDownloadExamSlips = (roomNo) => {
     const token = localStorage.getItem('adminToken');
-    const url = `https://apinmea.oxiumev.com/api/admin/simple-exam-slips/${roomNo}?preview=false&print=true&token=${token}`;
+    const url = `http://localhost:5010/api/admin/simple-exam-slips/${roomNo}?preview=false&print=true&token=${token}`;
     downloadPDF(url);
   };
 
@@ -526,7 +526,7 @@ const RoomManagement = ({ stats }) => {
                       <Tooltip title="Download Hall Ticket">
                         <IconButton
                           size="small"
-                          onClick={() => window.open(`https://apinmea.oxiumev.com/api/students/${student.registrationCode}/hallticket/download`, '_blank')}
+                          onClick={() => window.open(`http://localhost:5010/api/students/${student.registrationCode}/hallticket/download`, '_blank')}
                         >
                           <DownloadIcon fontSize="small" />
                         </IconButton>

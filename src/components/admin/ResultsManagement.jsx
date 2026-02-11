@@ -56,7 +56,7 @@ import toast from "react-hot-toast";
 //     try {
 //       const token = localStorage.getItem('adminToken');
 //       const response = await axios.get(
-//         "https://apinmea.oxiumev.com/api/admin/results/top-performers",
+//         "http://localhost:5010/api/admin/results/top-performers",
 //         {
 //           headers: { "x-auth-token": token },
 //         }
@@ -77,7 +77,7 @@ import toast from "react-hot-toast";
 //     try {
 //       const token = localStorage.getItem('adminToken');
 //       const response = await axios.get(
-//         "https://apinmea.oxiumev.com/api/results/top",
+//         "http://localhost:5010/api/results/top",
 //         {
 //           headers: { "x-auth-token": token },
 //         }
@@ -100,7 +100,7 @@ import toast from "react-hot-toast";
 //     try {
 //       const token = localStorage.getItem('adminToken');
 //       const response = await axios.post(
-//         "https://apinmea.oxiumev.com/api/admin/results/update-ranks",
+//         "http://localhost:5010/api/admin/results/update-ranks",
 //         {},
 //         {
 //           headers: { "x-auth-token": token },

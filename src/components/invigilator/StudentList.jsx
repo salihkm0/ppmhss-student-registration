@@ -59,7 +59,7 @@ const StudentList = ({ dashboardData }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('invigilatorToken');
-      let url = "https://apinmea.oxiumev.com/api/invigilator/dashboard";
+      let url = "http://localhost:5010/api/invigilator/dashboard";
 
       const response = await axios.get(url, {
         headers: { "x-auth-token": token },

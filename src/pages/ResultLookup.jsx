@@ -86,7 +86,7 @@ import { useNavigate } from "react-router-dom";
 //     try {
 //       if (searchType === "code") {
 //         const response = await axios.get(
-//           `https://apinmea.oxiumev.com/api/results/code/${registrationCode.trim().toUpperCase()}`
+//           `http://localhost:5010/api/results/code/${registrationCode.trim().toUpperCase()}`
 //         );
 
 //         if (response.data.success) {
@@ -95,7 +95,7 @@ import { useNavigate } from "react-router-dom";
 //         }
 //       } else {
 //         const response = await axios.get(
-//           `https://apinmea.oxiumev.com/api/results/phone/${phoneNo.trim()}`
+//           `http://localhost:5010/api/results/phone/${phoneNo.trim()}`
 //         );
 
 //         if (response.data.success) {

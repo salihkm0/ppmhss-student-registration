@@ -53,7 +53,7 @@ const AdminLogin = () => {
     setError('');
 
     try {
-      const response = await axios.post('https://apinmea.oxiumev.com/api/admin/login', formData);
+      const response = await axios.post('http://localhost:5010/api/admin/login', formData);
       
       if (response.data.success) {
         // Store admin token and data

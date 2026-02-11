@@ -86,7 +86,7 @@ const SuccessPage = () => {
     try {
       setLoadingDetails(true);
       const response = await axios.get(
-        `https://apinmea.oxiumev.com/api/students/${registrationCode}`,
+        `http://localhost:5010/api/students/${registrationCode}`,
       );
 
       if (response.data.success) {
@@ -117,7 +117,7 @@ const SuccessPage = () => {
   const handleWhatsApp = () => {
     if (!registrationData) return;
 
-    const hallTicketLink = `https://apinmea.oxiumev.com/api/students/${registrationData.registrationCode}/hallticket/download`;
+    const hallTicketLink = `http://localhost:5010/api/students/${registrationData.registrationCode}/hallticket/download`;
 
     let message = `📋 *NMEA TENDER SCHOLAR 26 - Registration Details*\n\n`;
     message += `👤 *Name:* ${registrationData.name}\n`;
@@ -150,7 +150,7 @@ const SuccessPage = () => {
     if (!registrationData) return;
 
     window.open(
-      `https://apinmea.oxiumev.com/api/students/${registrationData.registrationCode}/hallticket/download`,
+      `http://localhost:5010/api/students/${registrationData.registrationCode}/hallticket/download`,
       "_blank",
     );
   };

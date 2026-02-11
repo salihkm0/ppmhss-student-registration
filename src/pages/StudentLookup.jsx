@@ -48,7 +48,7 @@ const StudentLookup = () => {
 
     try {
       const response = await axios.get(
-        `https://apinmea.oxiumev.com/api/students/${registrationCode.trim().toUpperCase()}`,
+        `http://localhost:5010/api/students/${registrationCode.trim().toUpperCase()}`,
       );
 
       if (response.data.success) {
@@ -81,14 +81,14 @@ const StudentLookup = () => {
 
   const handlePreviewHallTicket = () => {
     window.open(
-      `https://apinmea.oxiumev.com/api/students/${student.registrationCode}/hallticket/preview`,
+      `http://localhost:5010/api/students/${student.registrationCode}/hallticket/preview`,
       "_blank",
     );
   };
 
   const handleDownloadHallTicket = () => {
     window.open(
-      `https://apinmea.oxiumev.com/api/students/${student.registrationCode}/hallticket/download`,
+      `http://localhost:5010/api/students/${student.registrationCode}/hallticket/download`,
       "_blank",
     );
   };

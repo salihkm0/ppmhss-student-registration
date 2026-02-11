@@ -53,7 +53,7 @@ const InvigilatorLogin = () => {
     setError('');
 
     try {
-      const response = await axios.post('https://apinmea.oxiumev.com/api/invigilator/login', formData);
+      const response = await axios.post('http://localhost:5010/api/invigilator/login', formData);
       
       if (response.data.success) {
         // Store invigilator token and data

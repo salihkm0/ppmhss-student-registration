@@ -115,7 +115,7 @@ import toast from "react-hot-toast";
 //     try {
 //       const token = localStorage.getItem('invigilatorToken');
 //       const response = await axios.post(
-//         `https://apinmea.oxiumev.com/api/invigilator/students/${studentId}/marks`,
+//         `http://localhost:5010/api/invigilator/students/${studentId}/marks`,
 //         { marks: mark },
 //         {
 //           headers: { "x-auth-token": token },
@@ -193,7 +193,7 @@ import toast from "react-hot-toast";
 //       const savePromises = marksToSave.map(async ({ studentId, marks: markValue }) => {
 //         try {
 //           const response = await axios.post(
-//             `https://apinmea.oxiumev.com/api/invigilator/students/${studentId}/marks`,
+//             `http://localhost:5010/api/invigilator/students/${studentId}/marks`,
 //             { marks: markValue },
 //             {
 //               headers: { "x-auth-token": token },
@@ -294,7 +294,7 @@ import toast from "react-hot-toast";
 //     try {
 //       const token = localStorage.getItem('invigilatorToken');
 //       const response = await axios.post(
-//         `https://apinmea.oxiumev.com/api/invigilator/rooms/${selectedRoom}/bulk-marks`,
+//         `http://localhost:5010/api/invigilator/rooms/${selectedRoom}/bulk-marks`,
 //         { marksData },
 //         {
 //           headers: { "x-auth-token": token },
@@ -322,7 +322,7 @@ import toast from "react-hot-toast";
 //     try {
 //       const token = localStorage.getItem('invigilatorToken');
 //       const dashboardResponse = await axios.get(
-//         "https://apinmea.oxiumev.com/api/invigilator/dashboard",
+//         "http://localhost:5010/api/invigilator/dashboard",
 //         {
 //           headers: { "x-auth-token": token },
 //         }

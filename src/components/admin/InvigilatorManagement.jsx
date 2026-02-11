@@ -95,7 +95,7 @@ import toast from "react-hot-toast";
 //       setLoading(true);
 //       const token = localStorage.getItem('adminToken');
 //       const response = await axios.get(
-//         "https://apinmea.oxiumev.com/api/admin/invigilators",
+//         "http://localhost:5010/api/admin/invigilators",
 //         {
 //           headers: { "x-auth-token": token },
 //         }
@@ -117,7 +117,7 @@ import toast from "react-hot-toast";
 //       setRoomsLoading(true);
 //       const token = localStorage.getItem('adminToken');
 //       const response = await axios.get(
-//         "https://apinmea.oxiumev.com/api/admin/rooms/available",
+//         "http://localhost:5010/api/admin/rooms/available",
 //         {
 //           headers: { "x-auth-token": token },
 //         }
@@ -142,7 +142,7 @@ import toast from "react-hot-toast";
 //     try {
 //       const token = localStorage.getItem('adminToken');
 //       const response = await axios.post(
-//         "https://apinmea.oxiumev.com/api/admin/invigilators",
+//         "http://localhost:5010/api/admin/invigilators",
 //         formData,
 //         {
 //           headers: { "x-auth-token": token },
@@ -166,7 +166,7 @@ import toast from "react-hot-toast";
 //     try {
 //       const token = localStorage.getItem('adminToken');
 //       const response = await axios.put(
-//         `https://apinmea.oxiumev.com/api/admin/invigilators/${selectedInvigilator._id}`,
+//         `http://localhost:5010/api/admin/invigilators/${selectedInvigilator._id}`,
 //         formData,
 //         {
 //           headers: { "x-auth-token": token },
@@ -193,7 +193,7 @@ import toast from "react-hot-toast";
 //     try {
 //       const token = localStorage.getItem('adminToken');
 //       const response = await axios.delete(
-//         `https://apinmea.oxiumev.com/api/admin/invigilators/${invigilatorId}`,
+//         `http://localhost:5010/api/admin/invigilators/${invigilatorId}`,
 //         {
 //           headers: { "x-auth-token": token },
 //         }
@@ -219,7 +219,7 @@ import toast from "react-hot-toast";
 //     try {
 //       const token = localStorage.getItem('adminToken');
 //       const response = await axios.post(
-//         `https://apinmea.oxiumev.com/api/admin/invigilators/${selectedInvigilator._id}/assign-rooms`,
+//         `http://localhost:5010/api/admin/invigilators/${selectedInvigilator._id}/assign-rooms`,
 //         assignData,
 //         {
 //           headers: { "x-auth-token": token },
@@ -247,7 +247,7 @@ import toast from "react-hot-toast";
 //     try {
 //       const token = localStorage.getItem('adminToken');
 //       const response = await axios.post(
-//         `https://apinmea.oxiumev.com/api/admin/invigilators/${invigilatorId}/remove-room`,
+//         `http://localhost:5010/api/admin/invigilators/${invigilatorId}/remove-room`,
 //         { roomNo },
 //         {
 //           headers: { "x-auth-token": token },

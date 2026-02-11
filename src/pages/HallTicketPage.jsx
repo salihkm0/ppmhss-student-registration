@@ -44,7 +44,7 @@ const HallTicketPage = () => {
     try {
       setLoading(true);
       const response = await axios.get(
-        `https://apinmea.oxiumev.com/api/students/${code}`
+        `http://localhost:5010/api/students/${code}`
       );
 
       if (response.data.success) {
@@ -65,7 +65,7 @@ const HallTicketPage = () => {
 
   const handleDownload = () => {
     window.open(
-      `https://apinmea.oxiumev.com/api/students/${code}/hallticket/download`,
+      `http://localhost:5010/api/students/${code}/hallticket/download`,
       "_blank"
     );
   };
