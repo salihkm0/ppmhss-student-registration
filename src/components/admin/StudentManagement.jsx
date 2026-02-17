@@ -53,6 +53,7 @@ import {
   Restore as RestoreIcon,
   DeleteForever as DeleteForeverIcon,
   ContentCopy as CopyIcon,
+  Edit as EditIcon,
 } from "@mui/icons-material";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -69,6 +70,8 @@ const StudentManagement = () => {
   const [roomFilter, setRoomFilter] = useState("");
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({});
   const [rooms, setRooms] = useState([]);
   const [showDeleted, setShowDeleted] = useState(false);
   const [deletedStudents, setDeletedStudents] = useState([]);
@@ -76,6 +79,7 @@ const StudentManagement = () => {
   const [softDeleteDialogOpen, setSoftDeleteDialogOpen] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
   const [studentToDelete, setStudentToDelete] = useState(null);
+  const [editLoading, setEditLoading] = useState(false);
 
   useEffect(() => {
     fetchStudents();
@@ -101,7 +105,7 @@ const StudentManagement = () => {
         {
           headers: { "x-auth-token": token },
           params,
-        }
+        },
       );
 
       if (response.data.success) {
@@ -123,7 +127,7 @@ const StudentManagement = () => {
         "https://apinmea.oxiumev.com/api/admin/students/room-distribution",
         {
           headers: { "x-auth-token": token },
-        }
+        },
       );
 
       if (response.data.success) {
@@ -144,7 +148,7 @@ const StudentManagement = () => {
         "https://apinmea.oxiumev.com/api/admin/students/deleted",
         {
           headers: { "x-auth-token": token },
-        }
+        },
       );
 
       if (response.data.success) {
@@ -170,7 +174,7 @@ const StudentManagement = () => {
         {
           headers: { "x-auth-token": token },
           data: { reason: deleteReason },
-        }
+        },
       );
 
       if (response.data.success) {
@@ -178,6 +182,8 @@ const StudentManagement = () => {
         setSoftDeleteDialogOpen(false);
         fetchStudents();
         fetchDeletedStudents();
+        if (dialogOpen) setDialogOpen(false);
+        if (editDialogOpen) setEditDialogOpen(false);
       }
     } catch (error) {
       console.error("Error soft deleting student:", error);
@@ -188,7 +194,7 @@ const StudentManagement = () => {
   const handleRestoreStudent = async (studentId) => {
     if (
       !window.confirm(
-        "Are you sure you want to restore this student? The student will be visible in regular views again."
+        "Are you sure you want to restore this student? The student will be visible in regular views again.",
       )
     ) {
       return;
@@ -201,7 +207,7 @@ const StudentManagement = () => {
         {},
         {
           headers: { "x-auth-token": token },
-        }
+        },
       );
 
       if (response.data.success) {
@@ -218,7 +224,7 @@ const StudentManagement = () => {
   const handleHardDelete = async (studentId, studentName) => {
     if (
       !window.confirm(
-        `⚠️ WARNING: Are you sure you want to permanently delete ${studentName}?\n\nThis action cannot be undone and will permanently remove all student data from the database.`
+        `⚠️ WARNING: Are you sure you want to permanently delete ${studentName}?\n\nThis action cannot be undone and will permanently remove all student data from the database.`,
       )
     ) {
       return;
@@ -230,7 +236,7 @@ const StudentManagement = () => {
         `https://apinmea.oxiumev.com/api/admin/students/hard-delete/${studentId}`,
         {
           headers: { "x-auth-token": token },
-        }
+        },
       );
 
       if (response.data.success) {
@@ -247,11 +253,14 @@ const StudentManagement = () => {
     try {
       const token = localStorage.getItem("adminToken");
       const params = showDeleted ? { showDeleted: true } : {};
-      const response = await axios.get("https://apinmea.oxiumev.com/api/admin/export", {
-        headers: { "x-auth-token": token },
-        params,
-        responseType: "blob",
-      });
+      const response = await axios.get(
+        "https://apinmea.oxiumev.com/api/admin/export",
+        {
+          headers: { "x-auth-token": token },
+          params,
+          responseType: "blob",
+        },
+      );
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
@@ -276,10 +285,248 @@ const StudentManagement = () => {
     setDialogOpen(true);
   };
 
+  const handleEditClick = (student) => {
+    setSelectedStudent(student);
+    // Initialize form with ONLY the fields present in schema
+    setEditFormData({
+      name: student.name || "",
+      fatherName: student.fatherName || "",
+      aadhaarNo: student.aadhaarNo || "",
+      phoneNo: student.phoneNo || "",
+      gender: student.gender || "",
+      schoolName: student.schoolName || "",
+      studyingClass: student.studyingClass || "",
+      medium: student.medium || "",
+      subDistrict: student.subDistrict || "",
+      address: {
+        houseName: student.address?.houseName || "",
+        place: student.address?.place || "",
+        postOffice: student.address?.postOffice || "",
+        village: student.address?.village || "",
+        pinCode: student.address?.pinCode || "",
+        localBodyName: student.address?.localBodyName || "",
+        localBodyType: student.address?.localBodyType || "",
+      },
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleEditFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+
+    if (name.includes(".")) {
+      // Handle nested fields (address)
+      const [parent, child] = name.split(".");
+      setEditFormData((prev) => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent],
+          [child]: type === "checkbox" ? checked : value,
+        },
+      }));
+    } else {
+      setEditFormData((prev) => ({
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      }));
+    }
+  };
+
+  const validateEditForm = () => {
+    // Required fields validation (exactly as per schema)
+    const requiredFields = [
+      "name",
+      "fatherName",
+      "aadhaarNo",
+      "phoneNo",
+      "gender",
+      "schoolName",
+      "studyingClass",
+      "medium",
+      "subDistrict",
+    ];
+
+    for (const field of requiredFields) {
+      if (!editFormData[field] || editFormData[field].trim() === "") {
+        toast.error(
+          `${field.replace(/([A-Z])/g, " $1").toLowerCase()} is required`,
+        );
+        return false;
+      }
+    }
+
+    // Address required fields
+    const addressRequiredFields = [
+      "houseName",
+      "place",
+      "postOffice",
+      "village",
+      "pinCode",
+      "localBodyName",
+      "localBodyType",
+    ];
+
+    if (editFormData.address) {
+      for (const field of addressRequiredFields) {
+        if (
+          !editFormData.address[field] ||
+          editFormData.address[field].trim() === ""
+        ) {
+          toast.error(
+            `Address ${field.replace(/([A-Z])/g, " $1").toLowerCase()} is required`,
+          );
+          return false;
+        }
+      }
+    }
+
+    // Aadhaar validation (12 digits)
+    if (!/^\d{12}$/.test(editFormData.aadhaarNo)) {
+      toast.error("Aadhaar number must be exactly 12 digits");
+      return false;
+    }
+
+    // Phone validation (10 digits)
+    if (!/^\d{10}$/.test(editFormData.phoneNo)) {
+      toast.error("Phone number must be exactly 10 digits");
+      return false;
+    }
+
+    // PIN code validation (6 digits)
+    if (
+      editFormData.address?.pinCode &&
+      !/^\d{6}$/.test(editFormData.address.pinCode)
+    ) {
+      toast.error("PIN code must be exactly 6 digits");
+      return false;
+    }
+
+    // SubDistrict validation
+    const validSubDistricts = [
+      "kondotty",
+      "manjeri",
+      "kizhisseri",
+      "vengara",
+      "areekode",
+      "malappuram",
+      "",
+    ];
+    if (!validSubDistricts.includes(editFormData.subDistrict)) {
+      toast.error("Please select a valid sub-district");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleEditSubmit = async () => {
+    if (!validateEditForm()) {
+      return;
+    }
+
+    try {
+      setEditLoading(true);
+      const token = localStorage.getItem("adminToken");
+
+      // Prepare update data - ONLY fields present in schema
+      const updateData = {};
+
+      // Basic fields that can be edited
+      const basicFields = [
+        "name",
+        "fatherName",
+        "aadhaarNo",
+        "phoneNo",
+        "gender",
+        "schoolName",
+        "studyingClass",
+        "medium",
+        "subDistrict",
+      ];
+
+      basicFields.forEach((field) => {
+        if (editFormData[field] !== selectedStudent[field]) {
+          updateData[field] = editFormData[field];
+        }
+      });
+
+      // IMPORTANT FIX: Always send the complete address object if any address field changed
+      // or if address fields are required by validation
+      const addressChanged = false;
+      const currentAddress = editFormData.address || {};
+      const originalAddress = selectedStudent.address || {};
+
+      // Check if any address field changed
+      const addressFields = [
+        "houseName",
+        "place",
+        "postOffice",
+        "village",
+        "pinCode",
+        "localBodyName",
+        "localBodyType",
+      ];
+
+      let hasAddressChanges = false;
+      const addressUpdate = {};
+
+      addressFields.forEach((field) => {
+        if (currentAddress[field] !== originalAddress[field]) {
+          addressUpdate[field] = currentAddress[field];
+          hasAddressChanges = true;
+        }
+      });
+
+      // If any address field changed, send the COMPLETE address object
+      // to satisfy backend validation that requires all fields
+      if (hasAddressChanges) {
+        // Send the complete address object with all current values
+        updateData.address = {
+          houseName: currentAddress.houseName || "",
+          place: currentAddress.place || "",
+          postOffice: currentAddress.postOffice || "",
+          village: currentAddress.village || "",
+          pinCode: currentAddress.pinCode || "",
+          localBodyName: currentAddress.localBodyName || "",
+          localBodyType: currentAddress.localBodyType || "",
+        };
+      }
+
+      // Check if there's anything to update
+      if (Object.keys(updateData).length === 0) {
+        toast.error("No changes to update");
+        setEditLoading(false);
+        return;
+      }
+
+      console.log("Sending update data:", JSON.stringify(updateData, null, 2)); // For debugging
+
+      const response = await axios.put(
+        `https://apinmea.oxiumev.com/api/admin/students/${selectedStudent._id}`,
+        updateData,
+        {
+          headers: { "x-auth-token": token },
+        },
+      );
+
+      if (response.data.success) {
+        toast.success("Student updated successfully");
+        setEditDialogOpen(false);
+        fetchStudents(); // Refresh the list
+      }
+    } catch (error) {
+      console.error("Error updating student:", error);
+      console.error("Error response:", error.response?.data); // Log full error
+      toast.error(error.response?.data?.error || "Failed to update student");
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   const handleDownloadHallTicket = (registrationCode) => {
     window.open(
       `https://apinmea.oxiumev.com/api/students/${registrationCode}/hallticket/download`,
-      "_blank"
+      "_blank",
     );
   };
 
@@ -577,7 +824,9 @@ const StudentManagement = () => {
                       </Box>
                     </TableCell>
                     <TableCell>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
                         <PhoneIcon fontSize="small" color="action" />
                         <Typography variant="body2" fontWeight={500}>
                           {student.phoneNo}
@@ -593,7 +842,9 @@ const StudentManagement = () => {
                         size="small"
                         sx={{ mb: 1 }}
                       />
-                      <Typography variant="body2">{student.schoolName}</Typography>
+                      <Typography variant="body2">
+                        {student.schoolName}
+                      </Typography>
                       <Typography variant="caption" color="text.secondary">
                         Medium: {student.medium}
                       </Typography>
@@ -637,6 +888,15 @@ const StudentManagement = () => {
                             onClick={() => handleViewDetails(student)}
                           >
                             <VisibilityIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit Student">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleEditClick(student)}
+                            color="primary"
+                          >
+                            <EditIcon />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Download Hall Ticket">
@@ -736,7 +996,13 @@ const StudentManagement = () => {
                           <Typography variant="caption" color="text.secondary">
                             Gender
                           </Typography>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
                             {getGenderIcon(selectedStudent.gender)}
                             <Typography variant="body1">
                               {selectedStudent.gender}
@@ -755,7 +1021,13 @@ const StudentManagement = () => {
                           <Typography variant="caption" color="text.secondary">
                             Aadhaar Number
                           </Typography>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
                             <Typography variant="body1" fontFamily="monospace">
                               {selectedStudent.aadhaarNo}
                             </Typography>
@@ -786,7 +1058,13 @@ const StudentManagement = () => {
                           <Typography variant="caption" color="text.secondary">
                             Phone Number
                           </Typography>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
                             <PhoneIcon fontSize="small" color="action" />
                             <Typography variant="body1">
                               {selectedStudent.phoneNo}
@@ -836,7 +1114,13 @@ const StudentManagement = () => {
                           <Typography variant="caption" color="text.secondary">
                             School Name
                           </Typography>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
                             <SchoolIcon fontSize="small" color="action" />
                             <Typography variant="body1">
                               {selectedStudent.schoolName}
@@ -859,6 +1143,17 @@ const StudentManagement = () => {
                             {selectedStudent.medium}
                           </Typography>
                         </Grid>
+                        <Grid item xs={12} md={6}>
+                          <Typography variant="caption" color="text.secondary">
+                            Sub District
+                          </Typography>
+                          <Typography
+                            variant="body1"
+                            sx={{ textTransform: "capitalize" }}
+                          >
+                            {selectedStudent.subDistrict || "Not specified"}
+                          </Typography>
+                        </Grid>
                       </Grid>
                     </CardContent>
                   </Card>
@@ -876,7 +1171,13 @@ const StudentManagement = () => {
                           <Typography variant="caption" color="text.secondary">
                             Room Number
                           </Typography>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
                             <RoomIcon fontSize="small" color="action" />
                             <Typography variant="body1">
                               {selectedStudent.roomNo}
@@ -912,7 +1213,10 @@ const StudentManagement = () => {
                         {selectedStudent.examMarks > 0 && (
                           <>
                             <Grid item xs={12} md={4}>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
                                 Exam Marks
                               </Typography>
                               <Typography variant="body1">
@@ -921,17 +1225,25 @@ const StudentManagement = () => {
                               </Typography>
                             </Grid>
                             <Grid item xs={12} md={4}>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
                                 Result Status
                               </Typography>
                               <Chip
                                 label={selectedStudent.resultStatus}
-                                color={getResultColor(selectedStudent.resultStatus)}
+                                color={getResultColor(
+                                  selectedStudent.resultStatus,
+                                )}
                                 size="small"
                               />
                             </Grid>
                             <Grid item xs={12} md={4}>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
                                 Rank
                               </Typography>
                               <Typography variant="body1">
@@ -941,30 +1253,58 @@ const StudentManagement = () => {
                               </Typography>
                             </Grid>
                             <Grid item xs={12} md={4}>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
                                 Scholarship
                               </Typography>
                               <Chip
                                 label={
-                                  selectedStudent.scholarship || "No Scholarship"
+                                  selectedStudent.scholarship ||
+                                  "No Scholarship"
                                 }
                                 color={
-                                  selectedStudent.scholarship ? "success" : "default"
+                                  selectedStudent.scholarship
+                                    ? "success"
+                                    : "default"
                                 }
                                 size="small"
                               />
                             </Grid>
                             <Grid item xs={12} md={4}>
-                              <Typography variant="caption" color="text.secondary">
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
                                 IAS Coaching
                               </Typography>
                               <Chip
-                                label={selectedStudent.iasCoaching ? "Yes" : "No"}
-                                color={selectedStudent.iasCoaching ? "success" : "default"}
+                                label={
+                                  selectedStudent.iasCoaching ? "Yes" : "No"
+                                }
+                                color={
+                                  selectedStudent.iasCoaching
+                                    ? "success"
+                                    : "default"
+                                }
                                 size="small"
                               />
                             </Grid>
                           </>
+                        )}
+                        {selectedStudent.remarks && (
+                          <Grid item xs={12}>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              Remarks
+                            </Typography>
+                            <Typography variant="body2">
+                              {selectedStudent.remarks}
+                            </Typography>
+                          </Grid>
                         )}
                       </Grid>
                     </CardContent>
@@ -1004,6 +1344,16 @@ const StudentManagement = () => {
             <DialogActions>
               <Button
                 variant="outlined"
+                startIcon={<EditIcon />}
+                onClick={() => {
+                  setDialogOpen(false);
+                  handleEditClick(selectedStudent);
+                }}
+              >
+                Edit
+              </Button>
+              <Button
+                variant="outlined"
                 startIcon={<DownloadIcon />}
                 onClick={() =>
                   handleDownloadHallTicket(selectedStudent.registrationCode)
@@ -1027,6 +1377,379 @@ const StudentManagement = () => {
         )}
       </Dialog>
 
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        {selectedStudent && (
+          <>
+            <DialogTitle>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Avatar sx={{ bgcolor: "#2563eb" }}>
+                  {selectedStudent.name.charAt(0)}
+                </Avatar>
+                <Box>
+                  <Typography variant="h6">
+                    Edit Student: {selectedStudent.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Reg: {selectedStudent.registrationCode} | Room{" "}
+                    {selectedStudent.roomNo}, Seat {selectedStudent.seatNo}
+                  </Typography>
+                </Box>
+              </Box>
+            </DialogTitle>
+            <DialogContent dividers>
+              <Alert severity="info" sx={{ mb: 3 }}>
+                <strong>Note:</strong> Only basic details can be edited. Room
+                number, seat number, registration code, application number, exam
+                marks, result status, rank, scholarship and IAS coaching are
+                system-generated and cannot be modified.
+              </Alert>
+
+              <Grid container spacing={3}>
+                {/* Personal Information */}
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="primary" gutterBottom>
+                    Personal Information
+                  </Typography>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Full Name"
+                            name="name"
+                            value={editFormData.name}
+                            onChange={handleEditFormChange}
+                            required
+                            variant="outlined"
+                            size="small"
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <FormControl fullWidth size="small" required>
+                            <InputLabel>Gender</InputLabel>
+                            <Select
+                              name="gender"
+                              value={editFormData.gender}
+                              onChange={handleEditFormChange}
+                              label="Gender"
+                            >
+                              <MenuItem value="Male">Male</MenuItem>
+                              <MenuItem value="Female">Female</MenuItem>
+                              <MenuItem value="Other">Other</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Father's Name"
+                            name="fatherName"
+                            value={editFormData.fatherName}
+                            onChange={handleEditFormChange}
+                            required
+                            variant="outlined"
+                            size="small"
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Aadhaar Number"
+                            name="aadhaarNo"
+                            value={editFormData.aadhaarNo}
+                            onChange={handleEditFormChange}
+                            required
+                            variant="outlined"
+                            size="small"
+                            inputProps={{ maxLength: 12 }}
+                            helperText="12 digits only"
+                          />
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Contact Information */}
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="primary" gutterBottom>
+                    Contact Information
+                  </Typography>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Phone Number"
+                            name="phoneNo"
+                            value={editFormData.phoneNo}
+                            onChange={handleEditFormChange}
+                            required
+                            variant="outlined"
+                            size="small"
+                            inputProps={{ maxLength: 10 }}
+                            helperText="10 digits only"
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="House Name"
+                            name="address.houseName"
+                            value={editFormData.address?.houseName || ""}
+                            onChange={handleEditFormChange}
+                            required
+                            variant="outlined"
+                            size="small"
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Place"
+                            name="address.place"
+                            value={editFormData.address?.place || ""}
+                            onChange={handleEditFormChange}
+                            required
+                            variant="outlined"
+                            size="small"
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Post Office"
+                            name="address.postOffice"
+                            value={editFormData.address?.postOffice || ""}
+                            onChange={handleEditFormChange}
+                            required
+                            variant="outlined"
+                            size="small"
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Village"
+                            name="address.village"
+                            value={editFormData.address?.village || ""}
+                            onChange={handleEditFormChange}
+                            required
+                            variant="outlined"
+                            size="small"
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="PIN Code"
+                            name="address.pinCode"
+                            value={editFormData.address?.pinCode || ""}
+                            onChange={handleEditFormChange}
+                            required
+                            variant="outlined"
+                            size="small"
+                            inputProps={{ maxLength: 6 }}
+                            helperText="6 digits only"
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <FormControl fullWidth size="small" required>
+                            <InputLabel>Local Body Type</InputLabel>
+                            <Select
+                              name="address.localBodyType"
+                              value={editFormData.address?.localBodyType || ""}
+                              onChange={handleEditFormChange}
+                              label="Local Body Type"
+                            >
+                              <MenuItem value="Municipality">
+                                Municipality
+                              </MenuItem>
+                              <MenuItem value="Corporation">
+                                Corporation
+                              </MenuItem>
+                              <MenuItem value="Panchayat">Panchayat</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Local Body Name"
+                            name="address.localBodyName"
+                            value={editFormData.address?.localBodyName || ""}
+                            onChange={handleEditFormChange}
+                            required
+                            variant="outlined"
+                            size="small"
+                          />
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* Academic Information */}
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" color="primary" gutterBottom>
+                    Academic Information
+                  </Typography>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="School Name"
+                            name="schoolName"
+                            value={editFormData.schoolName}
+                            onChange={handleEditFormChange}
+                            required
+                            variant="outlined"
+                            size="small"
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={3}>
+                          <FormControl fullWidth size="small" required>
+                            <InputLabel>Class</InputLabel>
+                            <Select
+                              name="studyingClass"
+                              value={editFormData.studyingClass}
+                              onChange={handleEditFormChange}
+                              label="Class"
+                            >
+                              {["7"].map((cls) => (
+                                <MenuItem key={cls} value={cls}>
+                                  Class {cls}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={3}>
+                          <FormControl fullWidth size="small" required>
+                            <InputLabel>Medium</InputLabel>
+                            <Select
+                              name="medium"
+                              value={editFormData.medium}
+                              onChange={handleEditFormChange}
+                              label="Medium"
+                            >
+                              <MenuItem value="English">English</MenuItem>
+                              <MenuItem value="Malayalam">Malayalam</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <FormControl fullWidth size="small" required>
+                            <InputLabel>Sub District</InputLabel>
+                            <Select
+                              name="subDistrict"
+                              value={editFormData.subDistrict}
+                              onChange={handleEditFormChange}
+                              label="Sub District"
+                            >
+                              <MenuItem value="kondotty">Kondotty</MenuItem>
+                              <MenuItem value="manjeri">Manjeri</MenuItem>
+                              <MenuItem value="kizhisseri">Kizhisseri</MenuItem>
+                              <MenuItem value="vengara">Vengara</MenuItem>
+                              <MenuItem value="areekode">Areekode</MenuItem>
+                              <MenuItem value="malappuram">Malappuram</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+
+                {/* System Information (Read Only) */}
+                <Grid item xs={12}>
+                  <Typography
+                    variant="subtitle2"
+                    color="text.secondary"
+                    gutterBottom
+                  >
+                    System Information (Read Only)
+                  </Typography>
+                  <Card variant="outlined" sx={{ bgcolor: "#f5f5f5" }}>
+                    <CardContent>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12} md={4}>
+                          <Typography variant="caption" color="text.secondary">
+                            Registration Code
+                          </Typography>
+                          <Typography variant="body2" fontFamily="monospace">
+                            {selectedStudent.registrationCode}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                          <Typography variant="caption" color="text.secondary">
+                            Application No
+                          </Typography>
+                          <Typography variant="body2" fontFamily="monospace">
+                            {selectedStudent.applicationNo}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                          <Typography variant="caption" color="text.secondary">
+                            Room / Seat
+                          </Typography>
+                          <Typography variant="body2">
+                            Room {selectedStudent.roomNo} | Seat{" "}
+                            {selectedStudent.seatNo}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                          <Typography variant="caption" color="text.secondary">
+                            Registration Date
+                          </Typography>
+                          <Typography variant="body2">
+                            {formatDate(selectedStudent.createdAt)}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                          <Typography variant="caption" color="text.secondary">
+                            Status
+                          </Typography>
+                          <Chip
+                            label={selectedStudent.status}
+                            size="small"
+                            color={
+                              selectedStudent.status === "Registered"
+                                ? "primary"
+                                : "default"
+                            }
+                          />
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              </Grid>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+              <Button
+                variant="contained"
+                onClick={handleEditSubmit}
+                disabled={editLoading}
+                startIcon={editLoading ? <CircularProgress size={20} /> : null}
+              >
+                {editLoading ? "Updating..." : "Update Student"}
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
+
       {/* Soft Delete Confirmation Dialog */}
       <Dialog
         open={softDeleteDialogOpen}
@@ -1036,8 +1759,8 @@ const StudentManagement = () => {
         <DialogContent>
           <Alert severity="warning" sx={{ mb: 2 }}>
             You are about to soft delete{" "}
-            <strong>{studentToDelete?.name}</strong>. This will hide the
-            student from regular views but keep the data for recovery.
+            <strong>{studentToDelete?.name}</strong>. This will hide the student
+            from regular views but keep the data for recovery.
           </Alert>
           <TextField
             fullWidth
