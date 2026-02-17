@@ -419,6 +419,7 @@ const RegistrationForm = () => {
                     <MenuItem value="kizhisseri">Kizhisseri</MenuItem>
                     <MenuItem value="vengara">Vengara</MenuItem>
                     <MenuItem value="areekode">Areekode</MenuItem>
+                    <MenuItem value="malappuram">Malappuram</MenuItem>
                   </TextField>
                   {errors.subDistrict && (
                     <FormHelperText>
