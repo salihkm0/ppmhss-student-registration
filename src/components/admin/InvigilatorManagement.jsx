@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Paper,
@@ -54,6 +54,8 @@ import {
   Autocomplete,
   Badge,
   Stack,
+  LinearProgress,
+  Pagination,
 } from "@mui/material";
 import {
   PersonAdd as PersonAddIcon,
@@ -80,6 +82,12 @@ import {
   GroupAdd as GroupAddIcon,
   MeetingRoom as MeetingRoomIcon,
   Visibility as VisibilityIcon,
+  Close as CloseIcon,
+  FilterList as FilterIcon,
+  Download as DownloadIcon,
+  PictureAsPdf as PdfIcon,
+  Male as MaleIcon,
+  Female as FemaleIcon,
 } from "@mui/icons-material";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -95,6 +103,8 @@ const InvigilatorManagement = () => {
   const [roomStatus, setRoomStatus] = useState([]);
   const [availableRooms, setAvailableRooms] = useState([]);
   const [assignedRooms, setAssignedRooms] = useState([]);
+  const [roomStudents, setRoomStudents] = useState(null);
+  const [selectedRoomForView, setSelectedRoomForView] = useState(null);
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -105,9 +115,16 @@ const InvigilatorManagement = () => {
   const [loading, setLoading] = useState(true);
   const [roomsLoading, setRoomsLoading] = useState(false);
   const [dutiesLoading, setDutiesLoading] = useState(false);
+  const [roomStudentsLoading, setRoomStudentsLoading] = useState(false);
+  const [availableRoomsLoading, setAvailableRoomsLoading] = useState(false);
   const [authError, setAuthError] = useState(false);
   const [tabValue, setTabValue] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const [roomSearchTerm, setRoomSearchTerm] = useState("");
+  const [filteredRooms, setFilteredRooms] = useState([]);
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 12;
+  
   const [selectedDate, setSelectedDate] = useState(
     new Date().toLocaleDateString('en-IN').split('/').reverse().join('-')
   );
@@ -119,12 +136,12 @@ const InvigilatorManagement = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
-  const [singleDutyDialogOpen, setSingleDutyDialogOpen] = useState(false);
   const [deletedDialogOpen, setDeletedDialogOpen] = useState(false);
   const [roomDialogOpen, setRoomDialogOpen] = useState(false);
   const [bulkDutyDialogOpen, setBulkDutyDialogOpen] = useState(false);
   const [editRoomDialogOpen, setEditRoomDialogOpen] = useState(false);
   const [roomStatusDialogOpen, setRoomStatusDialogOpen] = useState(false);
+  const [roomStudentsDialogOpen, setRoomStudentsDialogOpen] = useState(false);
   
   const [selectedInvigilator, setSelectedInvigilator] = useState(null);
   const [selectedDuty, setSelectedDuty] = useState(null);
@@ -140,16 +157,6 @@ const InvigilatorManagement = () => {
   });
   
   const [bulkData, setBulkData] = useState('');
-  
-  // Single Duty Assignment Form
-  const [singleDutyForm, setSingleDutyForm] = useState({
-    invigilatorId: '',
-    examDate: new Date().toISOString().split('T')[0],
-    dutyFrom: '09:00',
-    dutyTo: '13:00',
-    roomNo: '',
-    shortName: ''
-  });
 
   // Edit Duty Form
   const [editDutyForm, setEditDutyForm] = useState({
@@ -245,16 +252,34 @@ const InvigilatorManagement = () => {
   useEffect(() => {
     if (selectedDate) {
       fetchDutiesByDate();
-      fetchAvailableRoomsForDate();
+      fetchAvailableRoomsForDate(selectedDate);
     }
   }, [selectedDate]);
 
   useEffect(() => {
     if (selectedRoomViewDate) {
-      fetchAvailableRoomsForDate();
+      fetchAvailableRoomsForDate(selectedRoomViewDate);
     }
   }, [selectedRoomViewDate]);
 
+  // Search functionality for rooms
+  useEffect(() => {
+    const delaySearch = setTimeout(() => {
+      if (!roomSearchTerm.trim()) {
+        setFilteredRooms(roomStatus);
+      } else {
+        const filtered = roomStatus.filter(room =>
+          room.roomNo.toString().includes(roomSearchTerm.toLowerCase())
+        );
+        setFilteredRooms(filtered);
+      }
+      setPage(1);
+    }, 300);
+
+    return () => clearTimeout(delaySearch);
+  }, [roomSearchTerm, roomStatus]);
+
+  // Fetch invigilators from /exam-invigilator (CRUD operations)
   const fetchInvigilators = async () => {
     try {
       setLoading(true);
@@ -283,21 +308,26 @@ const InvigilatorManagement = () => {
     }
   };
 
+  // Fetch room status from admin/rooms/stats endpoint
   const fetchRoomStatus = async () => {
     try {
-      const response = await apiClient.get('/rooms/status');
+      const response = await apiClient.get('/admin/rooms/stats');
       if (response.data.success) {
-        setRoomStatus(response.data.data);
+        // Filter out rooms with 0 students
+        const activeRooms = response.data.data.filter(room => room.studentCount > 0);
+        setRoomStatus(activeRooms);
+        setFilteredRooms(activeRooms);
       }
     } catch (error) {
       console.error("Error fetching room status:", error);
     }
   };
 
-  const fetchAvailableRoomsForDate = async () => {
+  // Fetch available rooms for duty assignment
+  const fetchAvailableRoomsForDate = async (date) => {
     try {
-      setRoomsLoading(true);
-      const response = await apiClient.get(`/rooms/available-for-duty?date=${selectedRoomViewDate}`);
+      setAvailableRoomsLoading(true);
+      const response = await apiClient.get(`/rooms/available-for-duty?date=${date}`);
       if (response.data.success) {
         setAvailableRooms(response.data.data.available);
         setAssignedRooms(response.data.data.assigned);
@@ -305,7 +335,27 @@ const InvigilatorManagement = () => {
     } catch (error) {
       console.error("Error fetching available rooms:", error);
     } finally {
-      setRoomsLoading(false);
+      setAvailableRoomsLoading(false);
+    }
+  };
+
+  // Fetch room students for viewing
+  const fetchRoomStudents = async (roomNo) => {
+    setRoomStudentsLoading(true);
+    setSelectedRoomForView(roomNo);
+    try {
+      const response = await apiClient.get(`/students/rooms/${roomNo}`, {
+        params: { excludeDeleted: true }
+      });
+      if (response.data.success) {
+        setRoomStudents(response.data.data);
+        setRoomStudentsDialogOpen(true);
+      }
+    } catch (error) {
+      console.error("Error fetching room students:", error);
+      toast.error("Failed to load room students");
+    } finally {
+      setRoomStudentsLoading(false);
     }
   };
 
@@ -322,10 +372,11 @@ const InvigilatorManagement = () => {
     }
   };
 
+  // Fetch duties from /invigilator-duties (separate endpoint)
   const fetchDutiesByDate = async () => {
     try {
       setDutiesLoading(true);
-      const response = await apiClient.get(`/exam-invigilator/duties/by-date/${selectedDate}`);
+      const response = await apiClient.get(`/invigilator-duties/duties/by-date/${selectedDate}`);
       if (response.data.success) {
         setDuties(response.data.data);
       }
@@ -429,20 +480,42 @@ const InvigilatorManagement = () => {
     }
   };
 
-  // Single Room Assignment
-  const handleOpenRoomForm = (invigilator = null) => {
-    if (invigilator) {
+  // Single Room Assignment - Open modal for specific room
+  const handleOpenRoomFormForRoom = (room, invigilator = null) => {
+    // Refresh available rooms for the selected date
+    fetchAvailableRoomsForDate(selectedDate).then(() => {
       setRoomForm({
-        ...roomForm,
-        invigilatorId: invigilator._id,
-        shortName: invigilator.shortName,
+        invigilatorId: invigilator?._id || '',
+        shortName: invigilator?.shortName || '',
+        roomNo: room.roomNo.toString(),
+        dutyFrom: '09:00',
+        dutyTo: '13:00',
         examDate: selectedDate
       });
       setSelectedInvigilator(invigilator);
-    }
-    setRoomDialogOpen(true);
+      setRoomDialogOpen(true);
+    });
   };
 
+  // Open room assignment modal from invigilator list
+  const handleOpenRoomForm = (invigilator = null) => {
+    // Refresh available rooms for the selected date
+    fetchAvailableRoomsForDate(selectedDate).then(() => {
+      if (invigilator) {
+        setRoomForm({
+          ...roomForm,
+          invigilatorId: invigilator._id,
+          shortName: invigilator.shortName,
+          examDate: selectedDate,
+          roomNo: '' // Reset room selection
+        });
+        setSelectedInvigilator(invigilator);
+      }
+      setRoomDialogOpen(true);
+    });
+  };
+
+  // Assign room using /invigilator-duties/duties/bulk
   const handleAssignRoom = async () => {
     if (!roomForm.invigilatorId || !roomForm.examDate || !roomForm.dutyFrom || 
         !roomForm.dutyTo || !roomForm.roomNo) {
@@ -461,7 +534,7 @@ const InvigilatorManagement = () => {
         }]
       };
 
-      const response = await apiClient.post('/exam-invigilator/duties/bulk', dutyPayload);
+      const response = await apiClient.post('/invigilator-duties/duties/bulk', dutyPayload);
       if (response.data.success) {
         toast.success("Room assigned successfully");
         setRoomDialogOpen(false);
@@ -474,7 +547,8 @@ const InvigilatorManagement = () => {
           examDate: new Date().toISOString().split('T')[0]
         });
         fetchDutiesByDate();
-        fetchAvailableRoomsForDate();
+        fetchAvailableRoomsForDate(selectedDate);
+        fetchRoomStatus(); // Refresh room status
       }
     } catch (error) {
       console.error("Error assigning room:", error);
@@ -494,13 +568,17 @@ const InvigilatorManagement = () => {
       dutyTo: duty.dutyTo,
       roomNo: duty.roomNo
     });
-    setEditRoomDialogOpen(true);
+    // Refresh available rooms for edit
+    fetchAvailableRoomsForDate(new Date(duty.examDate).toISOString().split('T')[0]).then(() => {
+      setEditRoomDialogOpen(true);
+    });
   };
 
+  // Update room assignment
   const handleUpdateRoomAssignment = async () => {
     try {
       // First delete the old duty
-      await apiClient.delete(`/exam-invigilator/duties/${editDutyForm.dutyId}`);
+      await apiClient.delete(`/invigilator-duties/duties/${editDutyForm.dutyId}`);
       
       // Then create new one
       const dutyPayload = {
@@ -513,12 +591,13 @@ const InvigilatorManagement = () => {
         }]
       };
 
-      const response = await apiClient.post('/exam-invigilator/duties/bulk', dutyPayload);
+      const response = await apiClient.post('/invigilator-duties/duties/bulk', dutyPayload);
       if (response.data.success) {
         toast.success("Room assignment updated successfully");
         setEditRoomDialogOpen(false);
         fetchDutiesByDate();
-        fetchAvailableRoomsForDate();
+        fetchAvailableRoomsForDate(editDutyForm.examDate);
+        fetchRoomStatus(); // Refresh room status
       }
     } catch (error) {
       console.error("Error updating room assignment:", error);
@@ -526,18 +605,19 @@ const InvigilatorManagement = () => {
     }
   };
 
-  // Delete Room Assignment
+  // Delete room assignment
   const handleDeleteRoomAssignment = async (dutyId) => {
     if (!window.confirm("Are you sure you want to remove this room assignment?")) {
       return;
     }
 
     try {
-      const response = await apiClient.delete(`/exam-invigilator/duties/${dutyId}`);
+      const response = await apiClient.delete(`/invigilator-duties/duties/${dutyId}`);
       if (response.data.success) {
         toast.success("Room assignment removed successfully");
         fetchDutiesByDate();
-        fetchAvailableRoomsForDate();
+        fetchAvailableRoomsForDate(selectedDate);
+        fetchRoomStatus(); // Refresh room status
       }
     } catch (error) {
       console.error("Error removing room assignment:", error);
@@ -547,7 +627,18 @@ const InvigilatorManagement = () => {
 
   // View Room Details
   const handleViewRoomDetails = (room) => {
-    setSelectedRoom(room);
+    // Find if room has assigned invigilator from duties
+    const roomDuty = duties.find(d => d.roomNo === room.roomNo);
+    const roomWithDetails = {
+      ...room,
+      assignedInvigilator: roomDuty ? {
+        shortName: roomDuty.invigilatorId?.shortName,
+        name: roomDuty.invigilatorId?.name,
+        dutyFrom: roomDuty.dutyFrom,
+        dutyTo: roomDuty.dutyTo
+      } : null
+    };
+    setSelectedRoom(roomWithDetails);
     setRoomStatusDialogOpen(true);
   };
 
@@ -570,6 +661,22 @@ const InvigilatorManagement = () => {
       rooms: {},
       assignmentType: 'same'
     });
+  };
+
+  // Open bulk duty dialog with fresh room data
+  const handleOpenBulkDutyDialog = () => {
+    // Reset form and fetch available rooms for the current date
+    handleReset();
+    fetchAvailableRoomsForDate(bulkDutyForm.examDate).then(() => {
+      setBulkDutyDialogOpen(true);
+    });
+  };
+
+  // Handle date change in bulk form
+  const handleBulkDateChange = (date) => {
+    setBulkDutyForm({ ...bulkDutyForm, examDate: date, rooms: {} });
+    // Fetch available rooms for the new date
+    fetchAvailableRoomsForDate(date);
   };
 
   // Handle bulk duty submission
@@ -606,7 +713,7 @@ const InvigilatorManagement = () => {
         duties: duties
       };
 
-      const response = await apiClient.post('/exam-invigilator/duties/bulk', dutyPayload);
+      const response = await apiClient.post('/invigilator-duties/duties/bulk', dutyPayload);
       if (response.data.success) {
         toast.success(`Successfully assigned ${response.data.results.successful.length} duties`);
         if (response.data.results.failed.length > 0) {
@@ -615,7 +722,8 @@ const InvigilatorManagement = () => {
         setBulkDutyDialogOpen(false);
         handleReset();
         fetchDutiesByDate();
-        fetchAvailableRoomsForDate();
+        fetchAvailableRoomsForDate(bulkDutyForm.examDate);
+        fetchRoomStatus(); // Refresh room status
       }
     } catch (error) {
       console.error("Error assigning bulk duties:", error);
@@ -650,7 +758,7 @@ const InvigilatorManagement = () => {
   // Mark Attendance
   const handleMarkAttendance = async (dutyId, status) => {
     try {
-      const response = await apiClient.put(`/exam-invigilator/duties/${dutyId}/attendance`, { status });
+      const response = await apiClient.put(`/invigilator-duties/duties/${dutyId}/attendance`, { status });
       if (response.data.success) {
         toast.success(`Attendance marked as ${status}`);
         fetchDutiesByDate();
@@ -668,12 +776,13 @@ const InvigilatorManagement = () => {
     }
 
     try {
-      const response = await apiClient.delete(`/exam-invigilator/duties/batch/${batchId}`);
+      const response = await apiClient.delete(`/invigilator-duties/duties/batch/${batchId}`);
       if (response.data.success) {
         toast.success(response.data.message);
         setSelectedBatch(null);
         fetchDutiesByDate();
-        fetchAvailableRoomsForDate();
+        fetchAvailableRoomsForDate(selectedDate);
+        fetchRoomStatus(); // Refresh room status
       }
     } catch (error) {
       console.error("Error deleting batch:", error);
@@ -681,43 +790,53 @@ const InvigilatorManagement = () => {
     }
   };
 
-  const handlePrintAttendanceSheet = () => {
-  const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
-  
-  if (!token) {
-    toast.error('No authentication token found. Please login again.');
-    navigate('/admin/login');
-    return;
-  }
-
-  // Format the date correctly (ensure it's in DD-MM-YYYY format)
-  let formattedDate = selectedDate;
-  
-  // If selectedDate is in YYYY-MM-DD format, convert to DD-MM-YYYY
-  if (selectedDate.includes('-')) {
-    const parts = selectedDate.split('-');
-    if (parts[0].length === 4) {
-      // It's YYYY-MM-DD
-      formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+  // Handle Print Attendance Sheet
+  const handlePrintAttendanceSheet = (date = selectedDate) => {
+    const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+    
+    if (!token) {
+      toast.error('No authentication token found. Please login again.');
+      navigate('/admin/login');
+      return;
     }
-  }
 
-  // Show loading toast
-  toast.loading('Opening attendance sheet...', { id: 'pdf-loading' });
+    // Format the date correctly (ensure it's in DD-MM-YYYY format)
+    let formattedDate = date;
+    
+    if (date.includes('-')) {
+      const parts = date.split('-');
+      if (parts[0].length === 4) {
+        // It's YYYY-MM-DD
+        formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+    }
 
-  // Method 1: Open with token in URL (simplest)
-  const url = `${API_URL}/exam-invigilator/invigilator-attendance/${formattedDate}/pdf?preview=true&print=true&token=${encodeURIComponent(token)}`;
-  
-  // Open in new tab
-  const newWindow = window.open(url, '_blank');
-  
-  if (!newWindow) {
-    // Popup blocker might be blocking
-    toast.error('Please allow popups for this site', { id: 'pdf-loading' });
-  } else {
-    toast.success('Attendance sheet opened in new tab', { id: 'pdf-loading' });
-  }
-};
+    toast.loading('Opening attendance sheet...', { id: 'pdf-loading' });
+
+    const url = `${API_URL}/invigilator-duties/invigilator-attendance/${formattedDate}/pdf?preview=true&print=true&token=${encodeURIComponent(token)}`;
+    
+    const newWindow = window.open(url, '_blank');
+    
+    if (!newWindow) {
+      toast.error('Please allow popups for this site', { id: 'pdf-loading' });
+    } else {
+      toast.success('Attendance sheet opened in new tab', { id: 'pdf-loading' });
+    }
+  };
+
+  // Handle Print Room Attendance Sheet
+  const handlePrintRoomAttendanceSheet = (roomNo) => {
+    const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+    const url = `${API_URL}/admin/room-attendance/${roomNo}/pdf?preview=false&print=true&token=${token}`;
+    window.open(url, '_blank');
+  };
+
+  // Handle Print Room Exam Slips
+  const handlePrintRoomExamSlips = (roomNo) => {
+    const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
+    const url = `${API_URL}/admin/simple-exam-slips/${roomNo}?preview=false&print=true&token=${token}`;
+    window.open(url, '_blank');
+  };
 
   // Bulk Create Invigilators
   const handleBulkCreate = async () => {
@@ -770,6 +889,7 @@ const InvigilatorManagement = () => {
     navigate('/admin/login');
   };
 
+  // Filter invigilators
   const filteredInvigilators = invigilators.filter(inv => 
     inv.shortName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     inv.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -780,7 +900,7 @@ const InvigilatorManagement = () => {
   const getAvailableRoomOptions = () => {
     return availableRooms.map(room => ({
       value: room.roomNo,
-      label: `Room ${room.roomNo} (${room.studentCount} students)`
+      label: `Room ${room.roomNo} (${room.studentCount} students) - Available`
     }));
   };
 
@@ -789,19 +909,44 @@ const InvigilatorManagement = () => {
     const currentRoom = editDutyForm.roomNo;
     const options = availableRooms.map(room => ({
       value: room.roomNo,
-      label: `Room ${room.roomNo} (${room.studentCount} students)`
+      label: `Room ${room.roomNo} (${room.studentCount} students) - Available`
     }));
     
     // Add current room if it's not in available rooms
     if (currentRoom && !availableRooms.some(r => r.roomNo === currentRoom)) {
       options.push({
         value: currentRoom,
-        label: `Room ${currentRoom} (Current)`
+        label: `Room ${currentRoom} (Current Assignment)`
       });
     }
     
     return options;
   };
+
+  // Paginated rooms
+  const paginatedRooms = useMemo(() => {
+    const startIndex = (page - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredRooms.slice(startIndex, endIndex);
+  }, [filteredRooms, page]);
+
+  const totalPages = Math.ceil(filteredRooms.length / itemsPerPage);
+
+  // Summary statistics
+  const totalStudents = useMemo(() => 
+    roomStatus.reduce((sum, room) => sum + room.studentCount, 0), 
+    [roomStatus]
+  );
+
+  const totalCapacity = useMemo(() => 
+    roomStatus.reduce((sum, room) => sum + room.capacity, 0), 
+    [roomStatus]
+  );
+
+  const occupancyRate = useMemo(() => 
+    totalCapacity > 0 ? Math.round((totalStudents / totalCapacity) * 100) : 0, 
+    [totalStudents, totalCapacity]
+  );
 
   // Render step content for bulk duty assignment
   const getStepContent = (step) => {
@@ -815,7 +960,7 @@ const InvigilatorManagement = () => {
                 type="date"
                 label="Exam Date"
                 value={bulkDutyForm.examDate}
-                onChange={(e) => setBulkDutyForm({ ...bulkDutyForm, examDate: e.target.value })}
+                onChange={(e) => handleBulkDateChange(e.target.value)}
                 InputLabelProps={{ shrink: true }}
                 InputProps={{
                   startAdornment: (
@@ -860,6 +1005,16 @@ const InvigilatorManagement = () => {
                 }}
               />
             </Grid>
+            {availableRoomsLoading && (
+              <Grid item xs={12}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={20} />
+                  <Typography variant="body2" color="text.secondary">
+                    Loading available rooms...
+                  </Typography>
+                </Box>
+              </Grid>
+            )}
           </Grid>
         );
       
@@ -905,75 +1060,90 @@ const InvigilatorManagement = () => {
       case 2:
         return (
           <Box>
-            <FormControl component="fieldset" sx={{ mb: 2 }}>
-              <RadioGroup
-                value={bulkDutyForm.assignmentType}
-                onChange={(e) => setBulkDutyForm({ ...bulkDutyForm, assignmentType: e.target.value })}
-              >
-                <RadioFormControlLabel value="same" control={<Radio />} label="Same room for all" />
-                <RadioFormControlLabel value="different" control={<Radio />} label="Different rooms per invigilator" />
-              </RadioGroup>
-            </FormControl>
-
-            {bulkDutyForm.assignmentType === 'same' ? (
-              <FormControl fullWidth>
-                <InputLabel>Select Room</InputLabel>
-                <Select
-                  value={bulkDutyForm.rooms.same || ''}
-                  onChange={(e) => setBulkDutyForm({ 
-                    ...bulkDutyForm, 
-                    rooms: { ...bulkDutyForm.rooms, same: e.target.value }
-                  })}
-                  label="Select Room"
-                >
-                  {availableRooms.map((room) => (
-                    <MenuItem key={room.roomNo} value={room.roomNo}>
-                      Room {room.roomNo} ({room.studentCount} students)
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            ) : (
-              <Box>
-                <Typography variant="subtitle2" gutterBottom>Assign rooms to each invigilator:</Typography>
-                <Paper sx={{ maxHeight: 300, overflow: 'auto' }}>
-                  <List>
-                    {bulkDutyForm.selectedInvigilators.map((invId) => {
-                      const inv = invigilators.find(i => i._id === invId);
-                      return (
-                        <ListItem key={invId}>
-                          <ListItemText
-                            primary={
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Chip label={inv?.shortName} size="small" color="primary" variant="outlined" />
-                                <Typography>{inv?.name}</Typography>
-                              </Box>
-                            }
-                          />
-                          <FormControl sx={{ minWidth: 120 }}>
-                            <Select
-                              size="small"
-                              value={bulkDutyForm.rooms[invId] || ''}
-                              onChange={(e) => setBulkDutyForm({
-                                ...bulkDutyForm,
-                                rooms: { ...bulkDutyForm.rooms, [invId]: e.target.value }
-                              })}
-                              displayEmpty
-                            >
-                              <MenuItem value="" disabled>Select Room</MenuItem>
-                              {availableRooms.map((room) => (
-                                <MenuItem key={room.roomNo} value={room.roomNo}>
-                                  Room {room.roomNo}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        </ListItem>
-                      );
-                    })}
-                  </List>
-                </Paper>
+            {availableRoomsLoading ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4 }}>
+                <CircularProgress size={40} />
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                  Loading available rooms for {bulkDutyForm.examDate}...
+                </Typography>
               </Box>
+            ) : availableRooms.length === 0 ? (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                No available rooms for the selected date. All rooms are already assigned.
+              </Alert>
+            ) : (
+              <>
+                <FormControl component="fieldset" sx={{ mb: 2 }}>
+                  <RadioGroup
+                    value={bulkDutyForm.assignmentType}
+                    onChange={(e) => setBulkDutyForm({ ...bulkDutyForm, assignmentType: e.target.value })}
+                  >
+                    <RadioFormControlLabel value="same" control={<Radio />} label="Same room for all" />
+                    <RadioFormControlLabel value="different" control={<Radio />} label="Different rooms per invigilator" />
+                  </RadioGroup>
+                </FormControl>
+
+                {bulkDutyForm.assignmentType === 'same' ? (
+                  <FormControl fullWidth>
+                    <InputLabel>Select Room</InputLabel>
+                    <Select
+                      value={bulkDutyForm.rooms.same || ''}
+                      onChange={(e) => setBulkDutyForm({ 
+                        ...bulkDutyForm, 
+                        rooms: { ...bulkDutyForm.rooms, same: e.target.value }
+                      })}
+                      label="Select Room"
+                    >
+                      {availableRooms.map((room) => (
+                        <MenuItem key={room.roomNo} value={room.roomNo}>
+                          Room {room.roomNo} ({room.studentCount} students) - Available
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                ) : (
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>Assign rooms to each invigilator:</Typography>
+                    <Paper sx={{ maxHeight: 300, overflow: 'auto' }}>
+                      <List>
+                        {bulkDutyForm.selectedInvigilators.map((invId) => {
+                          const inv = invigilators.find(i => i._id === invId);
+                          return (
+                            <ListItem key={invId}>
+                              <ListItemText
+                                primary={
+                                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                    <Chip label={inv?.shortName} size="small" color="primary" variant="outlined" />
+                                    <Typography>{inv?.name}</Typography>
+                                  </Box>
+                                }
+                              />
+                              <FormControl sx={{ minWidth: 120 }}>
+                                <Select
+                                  size="small"
+                                  value={bulkDutyForm.rooms[invId] || ''}
+                                  onChange={(e) => setBulkDutyForm({
+                                    ...bulkDutyForm,
+                                    rooms: { ...bulkDutyForm.rooms, [invId]: e.target.value }
+                                  })}
+                                  displayEmpty
+                                >
+                                  <MenuItem value="" disabled>Select Room</MenuItem>
+                                  {availableRooms.map((room) => (
+                                    <MenuItem key={room.roomNo} value={room.roomNo}>
+                                      Room {room.roomNo}
+                                    </MenuItem>
+                                  ))}
+                                </Select>
+                              </FormControl>
+                            </ListItem>
+                          );
+                        })}
+                      </List>
+                    </Paper>
+                  </Box>
+                )}
+              </>
             )}
           </Box>
         );
@@ -1011,6 +1181,149 @@ const InvigilatorManagement = () => {
       default:
         return 'Unknown step';
     }
+  };
+
+  // Room Card Component
+  const RoomCard = ({ room, onViewClick, onAssignClick }) => {
+    const filledPercentage = (room.studentCount / room.capacity) * 100;
+    const hasInvigilator = assignedRooms.some(r => r.roomNo === room.roomNo);
+    const assignedInv = assignedRooms.find(r => r.roomNo === room.roomNo);
+
+    return (
+      <Card sx={{ height: '100%', border: '1px solid #e0e0e0', borderRadius: 2 }}>
+        <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+            <Box>
+              <Typography variant="h6" fontWeight={600}>
+                Room {room.roomNo}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Capacity: {room.capacity} seats
+              </Typography>
+            </Box>
+            <Avatar sx={{ bgcolor: hasInvigilator ? '#10b98115' : '#2563eb15', color: hasInvigilator ? '#10b981' : '#2563eb' }}>
+              <RoomIcon />
+            </Avatar>
+          </Box>
+
+          <Box sx={{ mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="body2" color="text.secondary">
+                Occupancy
+              </Typography>
+              <Typography variant="body2" fontWeight={600}>
+                {room.studentCount} / {room.capacity}
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={filledPercentage}
+              sx={{
+                height: 8,
+                borderRadius: 4,
+                bgcolor: '#f0f0f0',
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: filledPercentage >= 90 ? '#ef4444' : filledPercentage >= 75 ? '#f59e0b' : '#10b981',
+                  borderRadius: 4,
+                },
+              }}
+            />
+          </Box>
+
+          <Box sx={{ flexGrow: 1 }}>
+            <Grid container spacing={1} sx={{ mb: 2 }}>
+              <Grid item xs={6}>
+                <Paper sx={{ p: 1, textAlign: 'center', bgcolor: '#f9f9f9', borderRadius: 1 }}>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Available
+                  </Typography>
+                  <Typography variant="h6" color="#10b981" fontWeight={600}>
+                    {room.availableSeats}
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={6}>
+                <Paper sx={{ p: 1, textAlign: 'center', bgcolor: '#f9f9f9', borderRadius: 1 }}>
+                  <Typography variant="caption" color="text.secondary" display="block">
+                    Occupied
+                  </Typography>
+                  <Typography variant="h6" color="#2563eb" fontWeight={600}>
+                    {room.studentCount}
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+            
+            {/* Gender distribution */}
+            {room.genderCounts && room.genderCounts.length > 0 && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                  Gender Distribution
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  {room.genderCounts.map((gender) => (
+                    <Chip
+                      key={gender._id}
+                      size="small"
+                      label={`${gender._id}: ${gender.count}`}
+                      sx={{
+                        bgcolor: gender._id === 'Female' ? '#fce4ec' : '#e3f2fd',
+                        color: gender._id === 'Female' ? '#c2185b' : '#1976d2',
+                      }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+            )}
+
+            {/* Assigned Invigilator */}
+            {hasInvigilator && assignedInv && (
+              <Box sx={{ mt: 2, p: 1, bgcolor: '#e8f5e9', borderRadius: 1 }}>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  Assigned Invigilator
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                  <Chip 
+                    label={assignedInv.invigilator.shortName}
+                    size="small"
+                    color="success"
+                  />
+                  <Typography variant="caption">
+                    {assignedInv.dutyFrom} - {assignedInv.dutyTo}
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+          </Box>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 'auto' }}>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<VisibilityIcon />}
+              onClick={() => onViewClick(room.roomNo)}
+              fullWidth
+              disabled={roomStudentsLoading}
+            >
+              {roomStudentsLoading && selectedRoomForView === room.roomNo ? (
+                <CircularProgress size={20} sx={{ mr: 1 }} />
+              ) : null}
+              View Students
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<AssignmentIcon />}
+              onClick={() => onAssignClick(room)}
+              fullWidth
+              color={hasInvigilator ? 'warning' : 'primary'}
+            >
+              {hasInvigilator ? 'Change Assignment' : 'Assign Invigilator'}
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+    );
   };
 
   if (authError) {
@@ -1060,7 +1373,7 @@ const InvigilatorManagement = () => {
               fetchStats();
               fetchDutiesByDate();
               fetchRoomStatus();
-              fetchAvailableRoomsForDate();
+              fetchAvailableRoomsForDate(selectedDate);
             }}
           >
             Refresh
@@ -1125,10 +1438,10 @@ const InvigilatorManagement = () => {
           <Card>
             <CardContent>
               <Typography color="text.secondary" gutterBottom>
-                Rooms (1-20)
+                Active Rooms
               </Typography>
               <Typography variant="h4" fontWeight={600} color="primary.main">
-                {roomStatus.filter(r => r.hasStudents).length}/{roomStatus.length}
+                {roomStatus.length}
               </Typography>
             </CardContent>
           </Card>
@@ -1141,7 +1454,7 @@ const InvigilatorManagement = () => {
           <Tab label="Invigilators" />
           <Tab label="Room Assignments" />
           <Tab label="Attendance Sheet" />
-          <Tab label="Room Status" />
+          {/* <Tab label="Room Status" /> */}
         </Tabs>
       </Paper>
 
@@ -1179,7 +1492,7 @@ const InvigilatorManagement = () => {
                   variant="contained"
                   color="secondary"
                   startIcon={<GroupAddIcon />}
-                  onClick={() => setBulkDutyDialogOpen(true)}
+                  onClick={handleOpenBulkDutyDialog}
                 >
                   Bulk Assign
                 </Button>
@@ -1464,7 +1777,7 @@ const InvigilatorManagement = () => {
               <Button
                 variant="contained"
                 startIcon={<PrintIcon />}
-                onClick={handlePrintAttendanceSheet}
+                onClick={() => handlePrintAttendanceSheet(selectedDate)}
               >
                 Print Sheet
               </Button>
@@ -1524,156 +1837,111 @@ const InvigilatorManagement = () => {
 
       {/* Tab 4: Room Status */}
       {tabValue === 3 && (
-        <Paper sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-            <Typography variant="h6">Room Status Overview</Typography>
+        <Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+            <Box>
+              <Typography variant="h6" fontWeight={600}>
+                Room Status Overview
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {roomStatus.length} active rooms • {totalStudents} students • {occupancyRate}% occupancy
+              </Typography>
+            </Box>
             <Box sx={{ display: 'flex', gap: 2 }}>
               <TextField
                 type="date"
                 label="Select Date"
                 value={selectedRoomViewDate}
-                onChange={(e) => setSelectedRoomViewDate(e.target.value)}
+                onChange={(e) => {
+                  setSelectedRoomViewDate(e.target.value);
+                  fetchAvailableRoomsForDate(e.target.value);
+                }}
                 InputLabelProps={{ shrink: true }}
                 size="small"
               />
             </Box>
           </Box>
 
-          <Grid container spacing={3}>
-            {/* Available Rooms */}
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardHeader 
-                  title="Available Rooms" 
-                  subheader={`${availableRooms.length} rooms available`}
-                  avatar={<RoomIcon color="success" />}
+          {/* Search Bar */}
+          <Paper sx={{ p: 2, mb: 3 }}>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  placeholder="Search rooms by number..."
+                  value={roomSearchTerm}
+                  onChange={(e) => setRoomSearchTerm(e.target.value)}
+                  size="small"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon />
+                      </InputAdornment>
+                    ),
+                  }}
                 />
-                <CardContent>
-                  {roomsLoading ? (
-                    <CircularProgress />
-                  ) : availableRooms.length === 0 ? (
-                    <Alert severity="info">No available rooms for this date</Alert>
-                  ) : (
-                    <List>
-                      {availableRooms.map((room) => (
-                        <ListItem key={room.roomNo}>
-                          <ListItemText
-                            primary={`Room ${room.roomNo}`}
-                            secondary={`${room.studentCount} students`}
-                          />
-                          <Chip label="Available" color="success" size="small" />
-                        </ListItem>
-                      ))}
-                    </List>
-                  )}
-                </CardContent>
-              </Card>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Showing {paginatedRooms.length} of {roomStatus.length} active rooms
+                  </Typography>
+                  <Button
+                    startIcon={<FilterIcon />}
+                    size="small"
+                    onClick={() => {
+                      fetchRoomStatus();
+                      fetchAvailableRoomsForDate(selectedRoomViewDate);
+                    }}
+                    variant="outlined"
+                  >
+                    Refresh
+                  </Button>
+                </Box>
+              </Grid>
             </Grid>
+          </Paper>
 
-            {/* Assigned Rooms */}
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardHeader 
-                  title="Assigned Rooms" 
-                  subheader={`${assignedRooms.length} rooms assigned`}
-                  avatar={<RoomIcon color="primary" />}
-                />
-                <CardContent>
-                  {roomsLoading ? (
-                    <CircularProgress />
-                  ) : assignedRooms.length === 0 ? (
-                    <Alert severity="info">No rooms assigned for this date</Alert>
-                  ) : (
-                    <List>
-                      {assignedRooms.map((room) => (
-                        <ListItem key={room.roomNo}>
-                          <ListItemText
-                            primary={
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <Typography variant="subtitle2">Room {room.roomNo}</Typography>
-                                <Chip 
-                                  label={room.invigilator.shortName} 
-                                  size="small" 
-                                  color="primary" 
-                                  variant="outlined"
-                                />
-                              </Box>
-                            }
-                            secondary={
-                              <>
-                                <Typography variant="caption" display="block">
-                                  {room.invigilator.name}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary">
-                                  {room.dutyFrom} - {room.dutyTo}
-                                </Typography>
-                              </>
-                            }
-                          />
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Chip label="Assigned" color="primary" size="small" />
-                            <IconButton 
-                              size="small" 
-                              onClick={() => {
-                                const duty = duties.find(d => d._id === room.dutyId);
-                                if (duty) handleOpenEditRoomForm(duty);
-                              }}
-                            >
-                              <EditIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        </ListItem>
-                      ))}
-                    </List>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-
-            {/* All Rooms Status */}
-            <Grid item xs={12}>
-              <Card>
-                <CardHeader title="All Rooms Status" />
-                <CardContent>
-                  <Grid container spacing={2}>
-                    {roomStatus.map((room) => (
-                      <Grid item xs={12} sm={6} md={4} lg={3} key={room.roomNo}>
-                        <Card variant="outlined" sx={{ 
-                          bgcolor: room.assignedInvigilator ? '#e8f5e9' : room.hasStudents ? '#fff3e0' : '#f5f5f5'
-                        }}>
-                          <CardContent>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Typography variant="h6">Room {room.roomNo}</Typography>
-                              <IconButton size="small" onClick={() => handleViewRoomDetails(room)}>
-                                <VisibilityIcon fontSize="small" />
-                              </IconButton>
-                            </Box>
-                            <Typography variant="body2" color="text.secondary">
-                              Students: {room.occupiedSeats}/20
-                            </Typography>
-                            {room.assignedInvigilator ? (
-                              <Box sx={{ mt: 1 }}>
-                                <Chip 
-                                  label={`Inv: ${room.assignedInvigilator.shortName}`}
-                                  size="small"
-                                  color="success"
-                                />
-                              </Box>
-                            ) : room.hasStudents ? (
-                              <Chip label="Available" size="small" color="warning" sx={{ mt: 1 }} />
-                            ) : (
-                              <Chip label="No Students" size="small" sx={{ mt: 1 }} />
-                            )}
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                    ))}
+          {/* Room Cards Grid */}
+          {paginatedRooms.length > 0 ? (
+            <>
+              <Grid container spacing={3}>
+                {paginatedRooms.map((room) => (
+                  <Grid item xs={12} sm={6} md={4} lg={3} key={room.roomNo}>
+                    <RoomCard 
+                      room={room} 
+                      onViewClick={fetchRoomStudents}
+                      onAssignClick={(room) => handleOpenRoomFormForRoom(room)}
+                    />
                   </Grid>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </Paper>
+                ))}
+              </Grid>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                  <Pagination
+                    count={totalPages}
+                    page={page}
+                    onChange={(_, value) => setPage(value)}
+                    color="primary"
+                    showFirstButton
+                    showLastButton
+                  />
+                </Box>
+              )}
+            </>
+          ) : (
+            <Paper sx={{ p: 4, textAlign: 'center' }}>
+              <Typography variant="h6" color="text.secondary">
+                No active rooms found
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                {roomStatus.length === 0 ? 'No rooms have active students' : 'Try a different search term'}
+              </Typography>
+            </Paper>
+          )}
+        </Box>
       )}
 
       {/* Create Invigilator Dialog */}
@@ -1801,66 +2069,101 @@ const InvigilatorManagement = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <RoomIcon color="primary" />
             <Typography variant="h6">
-              Assign Room to {selectedInvigilator?.shortName || 'Invigilator'}
+              {roomForm.roomNo ? `Assign Room ${roomForm.roomNo}` : 'Assign Room to Invigilator'}
             </Typography>
           </Box>
         </DialogTitle>
         <DialogContent>
-          <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Select Room</InputLabel>
-                <Select
-                  value={roomForm.roomNo}
-                  onChange={(e) => setRoomForm({ ...roomForm, roomNo: e.target.value })}
-                  label="Select Room"
-                >
-                  {availableRooms.map((room) => (
-                    <MenuItem key={room.roomNo} value={room.roomNo}>
-                      Room {room.roomNo} ({room.studentCount} students)
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+          {availableRoomsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              {!roomForm.roomNo && (
+                <Grid item xs={12}>
+                  <FormControl fullWidth>
+                    <InputLabel>Select Invigilator</InputLabel>
+                    <Select
+                      value={roomForm.invigilatorId}
+                      onChange={(e) => {
+                        const inv = invigilators.find(i => i._id === e.target.value);
+                        setRoomForm({ 
+                          ...roomForm, 
+                          invigilatorId: e.target.value,
+                          shortName: inv?.shortName || ''
+                        });
+                      }}
+                      label="Select Invigilator"
+                    >
+                      {invigilators.filter(inv => inv.isActive).map((inv) => (
+                        <MenuItem key={inv._id} value={inv._id}>
+                          {inv.shortName} - {inv.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
+              <Grid item xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel>Select Room</InputLabel>
+                  <Select
+                    value={roomForm.roomNo}
+                    onChange={(e) => setRoomForm({ ...roomForm, roomNo: e.target.value })}
+                    label="Select Room"
+                  >
+                    {availableRooms.map((room) => (
+                      <MenuItem key={room.roomNo} value={room.roomNo}>
+                        Room {room.roomNo} ({room.studentCount} students) - Available
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
 
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                type="date"
-                label="Exam Date"
-                value={roomForm.examDate}
-                onChange={(e) => setRoomForm({ ...roomForm, examDate: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  type="date"
+                  label="Exam Date"
+                  value={roomForm.examDate}
+                  onChange={(e) => setRoomForm({ ...roomForm, examDate: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
 
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                type="time"
-                label="Duty From"
-                value={roomForm.dutyFrom}
-                onChange={(e) => setRoomForm({ ...roomForm, dutyFrom: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  type="time"
+                  label="Duty From"
+                  value={roomForm.dutyFrom}
+                  onChange={(e) => setRoomForm({ ...roomForm, dutyFrom: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
 
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                type="time"
-                label="Duty To"
-                value={roomForm.dutyTo}
-                onChange={(e) => setRoomForm({ ...roomForm, dutyTo: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-              />
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  type="time"
+                  label="Duty To"
+                  value={roomForm.dutyTo}
+                  onChange={(e) => setRoomForm({ ...roomForm, dutyTo: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
             </Grid>
-          </Grid>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRoomDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleAssignRoom}>
+          <Button 
+            variant="contained" 
+            onClick={handleAssignRoom}
+            disabled={!roomForm.invigilatorId || !roomForm.roomNo || availableRoomsLoading}
+          >
             Assign Room
           </Button>
         </DialogActions>
@@ -1878,57 +2181,63 @@ const InvigilatorManagement = () => {
           <Alert severity="info" sx={{ mb: 2 }}>
             Editing assignment for {editDutyForm.invigilatorName}
           </Alert>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <FormControl fullWidth>
-                <InputLabel>Select Room</InputLabel>
-                <Select
-                  value={editDutyForm.roomNo}
-                  onChange={(e) => setEditDutyForm({ ...editDutyForm, roomNo: e.target.value })}
-                  label="Select Room"
-                >
-                  {getRoomOptionsForEdit().map((option) => (
-                    <MenuItem key={option.value} value={option.value}>
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
+          {availableRoomsLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel>Select Room</InputLabel>
+                  <Select
+                    value={editDutyForm.roomNo}
+                    onChange={(e) => setEditDutyForm({ ...editDutyForm, roomNo: e.target.value })}
+                    label="Select Room"
+                  >
+                    {getRoomOptionsForEdit().map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
 
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                type="date"
-                label="Exam Date"
-                value={editDutyForm.examDate}
-                onChange={(e) => setEditDutyForm({ ...editDutyForm, examDate: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  type="date"
+                  label="Exam Date"
+                  value={editDutyForm.examDate}
+                  onChange={(e) => setEditDutyForm({ ...editDutyForm, examDate: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
 
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                type="time"
-                label="Duty From"
-                value={editDutyForm.dutyFrom}
-                onChange={(e) => setEditDutyForm({ ...editDutyForm, dutyFrom: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  type="time"
+                  label="Duty From"
+                  value={editDutyForm.dutyFrom}
+                  onChange={(e) => setEditDutyForm({ ...editDutyForm, dutyFrom: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
 
-            <Grid item xs={6}>
-              <TextField
-                fullWidth
-                type="time"
-                label="Duty To"
-                value={editDutyForm.dutyTo}
-                onChange={(e) => setEditDutyForm({ ...editDutyForm, dutyTo: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-              />
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  type="time"
+                  label="Duty To"
+                  value={editDutyForm.dutyTo}
+                  onChange={(e) => setEditDutyForm({ ...editDutyForm, dutyTo: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
             </Grid>
-          </Grid>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditRoomDialogOpen(false)}>Cancel</Button>
@@ -1992,6 +2301,7 @@ const InvigilatorManagement = () => {
                 variant="contained" 
                 onClick={handleBulkDutySubmit} 
                 sx={{ mt: 1, mr: 1 }}
+                disabled={availableRoomsLoading}
               >
                 Submit Assignments
               </Button>
@@ -2056,7 +2366,7 @@ const InvigilatorManagement = () => {
                       Occupied
                     </Typography>
                     <Typography variant="h4" color="primary">
-                      {selectedRoom.occupiedSeats}
+                      {selectedRoom.studentCount}
                     </Typography>
                   </CardContent>
                 </Card>
@@ -2080,12 +2390,32 @@ const InvigilatorManagement = () => {
                       Status
                     </Typography>
                     <Chip 
-                      label={selectedRoom.isFull ? 'Full' : selectedRoom.hasStudents ? 'Active' : 'Empty'}
-                      color={selectedRoom.isFull ? 'error' : selectedRoom.hasStudents ? 'success' : 'default'}
+                      label={selectedRoom.studentCount >= 20 ? 'Full' : selectedRoom.studentCount > 0 ? 'Active' : 'Empty'}
+                      color={selectedRoom.studentCount >= 20 ? 'error' : selectedRoom.studentCount > 0 ? 'success' : 'default'}
                     />
                   </CardContent>
                 </Card>
               </Grid>
+
+              {/* Gender distribution */}
+              {selectedRoom.genderCounts && selectedRoom.genderCounts.length > 0 && (
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" gutterBottom>Gender Distribution</Typography>
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    {selectedRoom.genderCounts.map((gender) => (
+                      <Chip
+                        key={gender._id}
+                        label={`${gender._id}: ${gender.count}`}
+                        sx={{
+                          bgcolor: gender._id === 'Female' ? '#fce4ec' : '#e3f2fd',
+                          color: gender._id === 'Female' ? '#c2185b' : '#1976d2',
+                        }}
+                      />
+                    ))}
+                  </Box>
+                </Grid>
+              )}
+
               {selectedRoom.assignedInvigilator && (
                 <Grid item xs={12}>
                   <Alert severity="info">
@@ -2111,6 +2441,166 @@ const InvigilatorManagement = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRoomStatusDialogOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Room Students Dialog */}
+      <Dialog 
+        open={roomStudentsDialogOpen} 
+        onClose={() => setRoomStudentsDialogOpen(false)} 
+        maxWidth="md" 
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 2 } }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <RoomIcon color="primary" />
+              <Box>
+                <Typography variant="h6" fontWeight={600}>
+                  Room {selectedRoomForView}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {roomStudents?.studentCount || 0} active students • {roomStudents?.availableSeats || 0} seats available
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton 
+              size="small" 
+              onClick={() => setRoomStudentsDialogOpen(false)}
+              sx={{ border: '1px solid #e0e0e0' }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+
+          {/* Gender Stats */}
+          {roomStudents?.genderCounts && roomStudents.genderCounts.length > 0 && (
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 3, 
+              mt: 2,
+              p: 2,
+              bgcolor: '#f8f9fa',
+              borderRadius: 1
+            }}>
+              {roomStudents.genderCounts.map((gender) => (
+                <Box 
+                  key={gender._id}
+                  sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1 
+                  }}
+                >
+                  {gender._id === 'Male' ? (
+                    <MaleIcon sx={{ color: '#1976d2', fontSize: 20 }} />
+                  ) : (
+                    <FemaleIcon sx={{ color: '#c2185b', fontSize: 20 }} />
+                  )}
+                  <Box>
+                    <Typography variant="body2" fontWeight={500}>
+                      {gender._id}
+                    </Typography>
+                    <Typography variant="h6" fontWeight={700}>
+                      {gender.count}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </DialogTitle>
+
+        <DialogContent sx={{ pt: 2 }}>
+          <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 1 }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+                  <TableCell><strong>Seat</strong></TableCell>
+                  <TableCell><strong>Name</strong></TableCell>
+                  <TableCell><strong>Gender</strong></TableCell>
+                  <TableCell><strong>Reg. Code</strong></TableCell>
+                  <TableCell align="center"><strong>Actions</strong></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {roomStudents?.students?.map((student) => (
+                  <TableRow key={student._id} hover>
+                    <TableCell>
+                      <Chip 
+                        label={student.seatNo} 
+                        size="small" 
+                        color="primary"
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Avatar 
+                          sx={{ 
+                            width: 32, 
+                            height: 32,
+                            fontSize: 14,
+                            bgcolor: student.gender === 'Female' ? '#fce4ec' : '#e3f2fd'
+                          }}
+                        >
+                          {student.name.charAt(0)}
+                        </Avatar>
+                        <Typography variant="body2">
+                          {student.name}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        size="small"
+                        icon={student.gender === 'Female' ? <FemaleIcon /> : <MaleIcon />}
+                        label={student.gender}
+                        color={student.gender === 'Female' ? 'secondary' : 'primary'}
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontFamily="monospace">
+                        {student.registrationCode}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Tooltip title="Download Hall Ticket">
+                        <IconButton
+                          size="small"
+                          onClick={() => window.open(`${API_URL}/students/${student.registrationCode}/hallticket/download`, '_blank')}
+                        >
+                          <DownloadIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2, pt: 0 }}>
+          <Button onClick={() => setRoomStudentsDialogOpen(false)}>
+            Close
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => handlePrintRoomAttendanceSheet(selectedRoomForView)}
+            startIcon={<PrintIcon />}
+          >
+            Attendance Sheet
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => handlePrintRoomExamSlips(selectedRoomForView)}
+            startIcon={<PdfIcon />}
+          >
+            Exam Slips
+          </Button>
         </DialogActions>
       </Dialog>
 
