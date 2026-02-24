@@ -26,6 +26,7 @@ import StudentManagement from "../../components/admin/StudentManagement.jsx";
 import RoomManagement from "../../components/admin/RoomManagement.jsx";
 import ResultsManagement from "../../components/admin/ResultsManagement.jsx";
 import InvigilatorManagement from "../../components/admin/InvigilatorManagement.jsx";
+import ExamControllerManagement from "../../components/admin/ExamControllerManagement.jsx"
 import AdminSettings from "../../components/admin/AdminSettings.jsx";
 
 const AdminDashboard = () => {
@@ -103,6 +104,11 @@ const AdminDashboard = () => {
       text: "Invigilators", 
       icon: <PersonAddIcon className="w-5 h-5" />, 
       path: "/admin/invigilators" 
+    },
+    { 
+      text: "Exam Controller", 
+      icon: <PersonAddIcon className="w-5 h-5" />, 
+      path: "/admin/exam-controller" 
     },
     { 
       text: "Settings", 
@@ -288,6 +294,7 @@ const AdminDashboard = () => {
               <Route path="/rooms" element={<RoomManagement stats={stats} />} />
               <Route path="/results" element={<ResultsManagement />} />
               <Route path="/invigilators" element={<InvigilatorManagement />} />
+              <Route path="/exam-controller" element={<ExamControllerManagement />} />
               <Route path="/settings" element={<AdminSettings />} />
               <Route path="/" element={<DashboardHome stats={stats} />} />
             </Routes>
