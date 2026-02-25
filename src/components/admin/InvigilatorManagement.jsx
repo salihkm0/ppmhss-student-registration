@@ -376,7 +376,7 @@ const InvigilatorManagement = () => {
   const fetchDutiesByDate = async () => {
     try {
       setDutiesLoading(true);
-      const response = await apiClient.get(`/invigilator-duties/duties/by-date/${selectedDate}`);
+      const response = await apiClient.get(`/invigilator-duties/by-date/${selectedDate}`);
       if (response.data.success) {
         setDuties(response.data.data);
       }
@@ -515,7 +515,7 @@ const InvigilatorManagement = () => {
     });
   };
 
-  // Assign room using /invigilator-duties/duties/bulk
+  // Assign room using /invigilator-duties/bulk (updated endpoint)
   const handleAssignRoom = async () => {
     if (!roomForm.invigilatorId || !roomForm.examDate || !roomForm.dutyFrom || 
         !roomForm.dutyTo || !roomForm.roomNo) {
@@ -534,7 +534,7 @@ const InvigilatorManagement = () => {
         }]
       };
 
-      const response = await apiClient.post('/invigilator-duties/duties/bulk', dutyPayload);
+      const response = await apiClient.post('/invigilator-duties/bulk', dutyPayload);
       if (response.data.success) {
         toast.success("Room assigned successfully");
         setRoomDialogOpen(false);
@@ -578,7 +578,7 @@ const InvigilatorManagement = () => {
   const handleUpdateRoomAssignment = async () => {
     try {
       // First delete the old duty
-      await apiClient.delete(`/invigilator-duties/duties/${editDutyForm.dutyId}`);
+      await apiClient.delete(`/invigilator-duties/${editDutyForm.dutyId}`);
       
       // Then create new one
       const dutyPayload = {
@@ -591,7 +591,7 @@ const InvigilatorManagement = () => {
         }]
       };
 
-      const response = await apiClient.post('/invigilator-duties/duties/bulk', dutyPayload);
+      const response = await apiClient.post('/invigilator-duties/bulk', dutyPayload);
       if (response.data.success) {
         toast.success("Room assignment updated successfully");
         setEditRoomDialogOpen(false);
@@ -612,7 +612,7 @@ const InvigilatorManagement = () => {
     }
 
     try {
-      const response = await apiClient.delete(`/invigilator-duties/duties/${dutyId}`);
+      const response = await apiClient.delete(`/invigilator-duties/${dutyId}`);
       if (response.data.success) {
         toast.success("Room assignment removed successfully");
         fetchDutiesByDate();
@@ -713,7 +713,7 @@ const InvigilatorManagement = () => {
         duties: duties
       };
 
-      const response = await apiClient.post('/invigilator-duties/duties/bulk', dutyPayload);
+      const response = await apiClient.post('/invigilator-duties/bulk', dutyPayload);
       if (response.data.success) {
         toast.success(`Successfully assigned ${response.data.results.successful.length} duties`);
         if (response.data.results.failed.length > 0) {
@@ -758,7 +758,7 @@ const InvigilatorManagement = () => {
   // Mark Attendance
   const handleMarkAttendance = async (dutyId, status) => {
     try {
-      const response = await apiClient.put(`/invigilator-duties/duties/${dutyId}/attendance`, { status });
+      const response = await apiClient.put(`/invigilator-duties/${dutyId}/attendance`, { status });
       if (response.data.success) {
         toast.success(`Attendance marked as ${status}`);
         fetchDutiesByDate();
@@ -776,7 +776,7 @@ const InvigilatorManagement = () => {
     }
 
     try {
-      const response = await apiClient.delete(`/invigilator-duties/duties/batch/${batchId}`);
+      const response = await apiClient.delete(`/invigilator-duties/batch/${batchId}`);
       if (response.data.success) {
         toast.success(response.data.message);
         setSelectedBatch(null);
@@ -813,7 +813,7 @@ const InvigilatorManagement = () => {
 
     toast.loading('Opening attendance sheet...', { id: 'pdf-loading' });
 
-    const url = `${API_URL}/invigilator-duties/invigilator-attendance/${formattedDate}/pdf?preview=true&print=true&token=${encodeURIComponent(token)}`;
+    const url = `${API_URL}/invigilator-duties/attendance/${formattedDate}/pdf?preview=true&print=true&token=${encodeURIComponent(token)}`;
     
     const newWindow = window.open(url, '_blank');
     
@@ -1564,15 +1564,6 @@ const InvigilatorManagement = () => {
                           <Tooltip title="Edit">
                             <IconButton size="small" onClick={() => handleOpenEditDialog(inv)}>
                               <EditIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Assign Room">
-                            <IconButton 
-                              size="small" 
-                              onClick={() => handleOpenRoomForm(inv)}
-                              color="primary"
-                            >
-                              <RoomIcon />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title={inv.isActive ? 'Deactivate' : 'Activate'}>
