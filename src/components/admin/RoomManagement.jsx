@@ -39,6 +39,7 @@ import {
   Close as CloseIcon,
   Search as SearchIcon,
   FilterList as FilterIcon,
+  MenuBook as MenuBookIcon, // New icon for register range
 } from "@mui/icons-material";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -154,6 +155,14 @@ const RoomManagement = ({ stats }) => {
     const token = localStorage.getItem('adminToken');
     const url = `https://apinmea.oxiumev.com/api/admin/simple-exam-slips/${roomNo}?preview=false&print=true&token=${token}`;
     downloadPDF(url);
+  };
+
+  // NEW FUNCTION: Download Room Register Range PDF (all rooms)
+  const handleDownloadRegisterRange = () => {
+    const token = localStorage.getItem('adminToken');
+    const url = `https://apinmea.oxiumev.com/api/rooms/register-range/pdf?preview=false&print=true&token=${token}`;
+    downloadPDF(url);
+    toast.success("Generating room register range PDF...");
   };
 
   // Room Card Component
@@ -322,6 +331,19 @@ const RoomManagement = ({ stats }) => {
             {rooms.length} rooms • {totalStudents} active students • {occupancyRate}% occupancy
           </Typography>
         </Box>
+        {/* NEW BUTTON: Register Range PDF */}
+        <Button
+          variant="contained"
+          color="secondary"
+          startIcon={<MenuBookIcon />}
+          onClick={handleDownloadRegisterRange}
+          sx={{ 
+            bgcolor: '#2c3e50',
+            '&:hover': { bgcolor: '#1a252f' }
+          }}
+        >
+          Room Register Range
+        </Button>
       </Box>
 
       {/* Search Bar */}
