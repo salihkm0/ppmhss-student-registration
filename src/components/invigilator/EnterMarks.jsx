@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Paper,
@@ -27,6 +27,8 @@ import {
   CircularProgress,
   FormControlLabel,
   Switch,
+  Menu,
+  MenuItem,
 } from "@mui/material";
 import {
   Save as SaveIcon,
@@ -43,6 +45,8 @@ import {
   Lock as LockIcon,
   Assignment as AssignmentIcon,
   Visibility as VisibilityIcon,
+  MoreVert as MoreVertIcon,
+  PersonOff as AbsentIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -63,28 +67,59 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
   const [savingStudentId, setSavingStudentId] = useState(null);
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
   const [submitAllDialogOpen, setSubmitAllDialogOpen] = useState(false);
-  const [submitMode, setSubmitMode] = useState('single'); // 'single' or 'all'
+  const [submitMode, setSubmitMode] = useState('single');
   const [selectedStudentForSubmit, setSelectedStudentForSubmit] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [absentDialogOpen, setAbsentDialogOpen] = useState(false);
+  const [selectedStudentForAbsent, setSelectedStudentForAbsent] = useState(null);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedStudentForMenu, setSelectedStudentForMenu] = useState(null);
+
+  const handleMenuOpen = (event, student) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedStudentForMenu(student);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedStudentForMenu(null);
+  };
 
   // Initialize data
   useEffect(() => {
-    if (dashboardData?.assignedRooms) {
+    if (dashboardData?.assignedRooms && !isInitialized) {
       setRooms(dashboardData.assignedRooms);
       if (dashboardData.assignedRooms.length > 0) {
-        const firstRoom = dashboardData.assignedRooms[0];
-        setSelectedRoom(firstRoom.roomNo);
-        initializeRoomData(firstRoom);
+        // Only set first room if no room is selected
+        if (!selectedRoom) {
+          const firstRoom = dashboardData.assignedRooms[0];
+          setSelectedRoom(firstRoom.roomNo);
+          initializeRoomData(firstRoom);
+        }
+        setIsInitialized(true);
       }
     }
   }, [dashboardData]);
 
+  // When selectedRoom changes, find and load that room's data
+  useEffect(() => {
+    if (selectedRoom && rooms.length > 0) {
+      const room = rooms.find(r => r.roomNo === selectedRoom);
+      if (room) {
+        initializeRoomData(room);
+      }
+    }
+  }, [selectedRoom, rooms]);
+
   // Initialize room data
   const initializeRoomData = (room) => {
-    setStudents(room.students);
+    if (!room) return;
+    
+    setStudents(room.students || []);
     
     // Initialize marks object with student IDs
     const initialMarks = {};
-    room.students.forEach(student => {
+    (room.students || []).forEach(student => {
       initialMarks[student._id] = student.examMarks || '';
     });
     setMarks(initialMarks);
@@ -93,10 +128,6 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
   // Handle room selection
   const handleRoomSelect = (roomNo) => {
     setSelectedRoom(roomNo);
-    const room = rooms.find(r => r.roomNo === roomNo);
-    if (room) {
-      initializeRoomData(room);
-    }
   };
 
   // Handle mark input change
@@ -110,6 +141,86 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
       if (autoSave && value !== '' && !isNaN(numValue)) {
         handleSaveSingleMark(studentId, value);
       }
+    }
+  };
+
+  // Mark student as absent (score 0)
+  const handleMarkAbsent = async () => {
+    if (!selectedStudentForAbsent) return;
+
+    const studentId = selectedStudentForAbsent._id;
+    const mark = 0;
+
+    setSavingStudentId(studentId);
+    setAbsentDialogOpen(false);
+    
+    try {
+      const token = localStorage.getItem('invigilatorToken');
+      const response = await axios.post(
+        `https://apinmea.oxiumev.com/api/invigilator/students/${studentId}/marks`,
+        { marks: mark },
+        {
+          headers: { "x-auth-token": token },
+        }
+      );
+
+      if (response.data.success) {
+        // Update local state
+        const updatedStudents = students.map(student => 
+          student._id === studentId 
+            ? { 
+                ...student, 
+                examMarks: mark, 
+                resultStatus: 'Failed',
+                markEntryStatus: 'draft'
+              }
+            : student
+        );
+        setStudents(updatedStudents);
+        
+        // Update room data
+        const updatedRooms = rooms.map(room => {
+          if (room.roomNo === selectedRoom) {
+            const updatedRoomStudents = (room.students || []).map(student => 
+              student._id === studentId 
+                ? { 
+                    ...student, 
+                    examMarks: mark, 
+                    resultStatus: 'Failed',
+                    markEntryStatus: 'draft'
+                  }
+                : student
+            );
+            return {
+              ...room,
+              students: updatedRoomStudents,
+              marksEntered: updatedRoomStudents.filter(s => s.examMarks > 0).length,
+              marksDraft: updatedRoomStudents.filter(s => s.markEntryStatus === 'draft').length,
+              marksSubmitted: updatedRoomStudents.filter(s => s.markEntryStatus === 'submitted').length,
+              marksFinal: updatedRoomStudents.filter(s => s.markEntryStatus === 'final').length,
+              marksPending: updatedRoomStudents.filter(s => !s.examMarks).length
+            };
+          }
+          return room;
+        });
+        setRooms(updatedRooms);
+        
+        // Update marks object
+        setMarks(prev => ({ ...prev, [studentId]: mark }));
+        
+        if (onDataUpdate) {
+          onDataUpdate();
+        }
+        
+        toast.success(`${selectedStudentForAbsent.name} marked as absent`);
+        handleMenuClose();
+        setSelectedStudentForAbsent(null);
+      }
+    } catch (error) {
+      console.error("Error marking absent:", error);
+      toast.error(error.response?.data?.error || "Failed to mark absent");
+    } finally {
+      setSavingStudentId(null);
     }
   };
 
@@ -158,10 +269,10 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
         );
         setStudents(updatedStudents);
         
-        // Update room data
+        // Update room data in rooms array
         const updatedRooms = rooms.map(room => {
           if (room.roomNo === selectedRoom) {
-            const updatedRoomStudents = room.students.map(student => 
+            const updatedRoomStudents = (room.students || []).map(student => 
               student._id === studentId 
                 ? { 
                     ...student, 
@@ -213,7 +324,7 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
     const studentId = selectedStudentForSubmit._id;
     const student = students.find(s => s._id === studentId);
     
-    if (!student.examMarks) {
+    if (!student.examMarks && student.examMarks !== 0) {
       toast.error("Please enter marks before submitting");
       setSubmitDialogOpen(false);
       return;
@@ -284,8 +395,8 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
       return;
     }
 
-    // Check if all students have marks entered
-    const studentsWithNoMarks = students.filter(s => !s.examMarks);
+    // Check if all students have marks entered (including 0 for absent)
+    const studentsWithNoMarks = students.filter(s => !s.examMarks && s.examMarks !== 0);
     if (studentsWithNoMarks.length > 0) {
       toast.error(`Cannot submit: ${studentsWithNoMarks.length} students have no marks entered`);
       setSubmitAllDialogOpen(false);
@@ -304,7 +415,7 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
       );
 
       if (response.data.success) {
-        // Refresh room data
+        // Refresh room data but maintain selected room
         await refreshRoomData();
         
         if (onDataUpdate) {
@@ -367,7 +478,7 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
       const failedSaves = results.filter(r => !r.success);
 
       if (successfulSaves.length > 0) {
-        // Refresh room data
+        // Refresh room data but maintain selected room
         await refreshRoomData();
         
         if (onDataUpdate) {
@@ -424,7 +535,7 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
         setBulkDialogOpen(false);
         setBulkMarks("");
         
-        // Refresh data
+        // Refresh data but maintain selected room
         await refreshRoomData();
       }
     } catch (error) {
@@ -450,16 +561,23 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
         const updatedRooms = dashboardResponse.data.dashboard.assignedRooms;
         setRooms(updatedRooms);
         
+        // Find the currently selected room in the updated data
         const updatedRoom = updatedRooms.find(r => r.roomNo === selectedRoom);
         if (updatedRoom) {
-          setStudents(updatedRoom.students);
+          // If the selected room still exists, update its data
+          setStudents(updatedRoom.students || []);
           
           // Update marks object
           const updatedMarks = {};
-          updatedRoom.students.forEach(student => {
+          (updatedRoom.students || []).forEach(student => {
             updatedMarks[student._id] = student.examMarks || '';
           });
           setMarks(updatedMarks);
+        } else if (updatedRooms.length > 0) {
+          // If selected room no longer exists, select the first room
+          const firstRoom = updatedRooms[0];
+          setSelectedRoom(firstRoom.roomNo);
+          // Data will be loaded by the useEffect
         }
         
         // Update dashboard data if callback provided
@@ -490,6 +608,14 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
   const handleOpenSubmitDialog = (student) => {
     setSelectedStudentForSubmit(student);
     setSubmitDialogOpen(true);
+    handleMenuClose();
+  };
+
+  // Open absent dialog
+  const handleOpenAbsentDialog = (student) => {
+    setSelectedStudentForAbsent(student);
+    setAbsentDialogOpen(true);
+    handleMenuClose();
   };
 
   // Calculate progress
@@ -506,9 +632,6 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
     return student.markEntryStatus !== 'submitted' && student.markEntryStatus !== 'final';
   };
 
-  // Get room by selectedRoom
-  const currentRoom = rooms.find(r => r.roomNo === selectedRoom);
-
   if (rooms.length === 0) {
     return (
       <Alert severity="info">
@@ -523,7 +646,7 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
         Enter Marks
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-        Enter exam marks for students in your assigned rooms. Save as draft, then submit when final.
+        Enter exam marks for students in your assigned rooms. Use 0 for absent students.
       </Typography>
 
       {/* Room Selection */}
@@ -569,15 +692,6 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
           </Grid>
           <Grid item xs={12} md={6}>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: { md: 'flex-end' } }}>
-              {/* <Button
-                variant="outlined"
-                startIcon={<SaveIcon />}
-                onClick={handleSaveAllMarks}
-                disabled={saving}
-                size="small"
-              >
-                {saving ? 'Saving...' : 'Save All'}
-              </Button> */}
               <Button
                 variant="contained"
                 color="success"
@@ -645,7 +759,7 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" fontWeight={600}>
-                      {student.examMarks || '-'}
+                      {student.examMarks === 0 ? '0 (Absent)' : student.examMarks || '-'}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -671,9 +785,10 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
                           inputProps={{ 
                             min: 0, 
                             max: 100,
-                            style: { textAlign: 'center' }
+                            style: { textAlign: 'center' },
+                            placeholder: "0-100"
                           }}
-                          sx={{ width: 80 }}
+                          sx={{ width: 90 }}
                           disabled={savingStudentId === student._id}
                         />
                         {savingStudentId === student._id && (
@@ -708,6 +823,13 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
                         size="small" 
                         icon={<SaveIcon />}
                       />
+                    ) : student.examMarks === 0 ? (
+                      <Chip 
+                        label="Absent" 
+                        color="error" 
+                        size="small" 
+                        icon={<AbsentIcon />}
+                      />
                     ) : student.examMarks ? (
                       <Chip label="Previously Entered" color="default" size="small" />
                     ) : (
@@ -736,18 +858,15 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
                               <SaveIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {/* {student.markEntryStatus === 'draft' && (
-                            <Tooltip title="Submit">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleOpenSubmitDialog(student)}
-                                disabled={!student.examMarks || submitting}
-                                color="success"
-                              >
-                                <SendIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )} */}
+                          <Tooltip title="More Options">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => handleMenuOpen(e, student)}
+                              color="default"
+                            >
+                              <MoreVertIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                         </>
                       )}
                       <Tooltip title="View History">
@@ -768,6 +887,58 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
         </Table>
       </TableContainer>
 
+      {/* Student Options Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem 
+          onClick={() => handleOpenSubmitDialog(selectedStudentForMenu)}
+          disabled={!selectedStudentForMenu?.examMarks && selectedStudentForMenu?.examMarks !== 0}
+        >
+          <SendIcon fontSize="small" sx={{ mr: 1 }} />
+          Submit Marks
+        </MenuItem>
+        <MenuItem 
+          onClick={() => handleOpenAbsentDialog(selectedStudentForMenu)}
+          disabled={selectedStudentForMenu?.examMarks === 0}
+        >
+          <AbsentIcon fontSize="small" sx={{ mr: 1 }} />
+          Mark as Absent (0)
+        </MenuItem>
+      </Menu>
+
+      {/* Mark Absent Dialog */}
+      <Dialog open={absentDialogOpen} onClose={() => setAbsentDialogOpen(false)}>
+        <DialogTitle>Mark as Absent</DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Are you sure you want to mark {selectedStudentForAbsent?.name} as absent?
+          </Alert>
+          <Typography variant="body2" gutterBottom>
+            Registration: {selectedStudentForAbsent?.registrationCode}
+          </Typography>
+          <Typography variant="body2" gutterBottom>
+            This will set their marks to 0 and mark them as failed.
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            You can still edit these marks later if needed.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAbsentDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={handleMarkAbsent}
+            disabled={savingStudentId === selectedStudentForAbsent?._id}
+          >
+            {savingStudentId === selectedStudentForAbsent?._id ? 'Processing...' : 'Mark Absent'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/* Submit Single Student Dialog */}
       <Dialog open={submitDialogOpen} onClose={() => setSubmitDialogOpen(false)}>
         <DialogTitle>Submit Marks</DialogTitle>
@@ -779,7 +950,7 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
             Registration: {selectedStudentForSubmit?.registrationCode}
           </Typography>
           <Typography variant="body2" gutterBottom>
-            Marks: {selectedStudentForSubmit?.examMarks}
+            Marks: {selectedStudentForSubmit?.examMarks === 0 ? '0 (Absent)' : selectedStudentForSubmit?.examMarks}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
             Once submitted, you cannot edit these marks. Admin can still make changes before rank generation.
@@ -837,9 +1008,11 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
           <Alert severity="info" sx={{ mb: 2 }}>
             Enter marks in CSV format: RegistrationCode,Marks (one per line)
             <br />
+            Use 0 for absent students.
+            <br />
             Example:<br />
             PPM1001,85<br />
-            PPM1002,92<br />
+            PPM1002,0<br />
             PPM1003,78
           </Alert>
           <TextField
@@ -848,7 +1021,7 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
             fullWidth
             value={bulkMarks}
             onChange={(e) => setBulkMarks(e.target.value)}
-            placeholder="PPM1001,85&#10;PPM1002,92&#10;PPM1003,78"
+            placeholder="PPM1001,85&#10;PPM1002,0&#10;PPM1003,78"
             sx={{ fontFamily: 'monospace' }}
           />
         </DialogContent>
