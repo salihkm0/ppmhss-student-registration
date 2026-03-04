@@ -25,6 +25,8 @@ import {
   Alert,
   LinearProgress,
   CircularProgress,
+  FormControlLabel,
+  Switch,
 } from "@mui/material";
 import {
   Save as SaveIcon,
@@ -36,21 +38,33 @@ import {
   Room as RoomIcon,
   EventSeat as SeatIcon,
   AutoFixHigh as AutoSaveIcon,
+  Send as SendIcon,
+  History as HistoryIcon,
+  Lock as LockIcon,
+  Assignment as AssignmentIcon,
+  Visibility as VisibilityIcon,
 } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import toast from "react-hot-toast";
 
 const EnterMarks = ({ dashboardData, onDataUpdate }) => {
+  const navigate = useNavigate();
   const [rooms, setRooms] = useState([]);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [students, setStudents] = useState([]);
   const [marks, setMarks] = useState({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [bulkMarks, setBulkMarks] = useState("");
   const [autoSave, setAutoSave] = useState(false);
   const [savingStudentId, setSavingStudentId] = useState(null);
+  const [submitDialogOpen, setSubmitDialogOpen] = useState(false);
+  const [submitAllDialogOpen, setSubmitAllDialogOpen] = useState(false);
+  const [submitMode, setSubmitMode] = useState('single'); // 'single' or 'all'
+  const [selectedStudentForSubmit, setSelectedStudentForSubmit] = useState(null);
 
   // Initialize data
   useEffect(() => {
@@ -105,6 +119,14 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
       return;
     }
 
+    const student = students.find(s => s._id === studentId);
+    
+    // Check if student marks are already submitted or finalized
+    if (student?.markEntryStatus === 'submitted' || student?.markEntryStatus === 'final') {
+      toast.error("Marks are already submitted/finalized and cannot be edited");
+      return;
+    }
+
     const mark = parseInt(markValue);
     if (isNaN(mark) || mark < 0 || mark > 100) {
       toast.error("Please enter valid marks between 0-100");
@@ -126,7 +148,12 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
         // Update local state immediately
         const updatedStudents = students.map(student => 
           student._id === studentId 
-            ? { ...student, examMarks: mark, resultStatus: mark >= 40 ? 'Passed' : 'Failed' }
+            ? { 
+                ...student, 
+                examMarks: mark, 
+                resultStatus: mark >= 40 ? 'Passed' : 'Failed',
+                markEntryStatus: 'draft'
+              }
             : student
         );
         setStudents(updatedStudents);
@@ -136,19 +163,30 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
           if (room.roomNo === selectedRoom) {
             const updatedRoomStudents = room.students.map(student => 
               student._id === studentId 
-                ? { ...student, examMarks: mark, resultStatus: mark >= 40 ? 'Passed' : 'Failed' }
+                ? { 
+                    ...student, 
+                    examMarks: mark, 
+                    resultStatus: mark >= 40 ? 'Passed' : 'Failed',
+                    markEntryStatus: 'draft'
+                  }
                 : student
             );
             return {
               ...room,
               students: updatedRoomStudents,
               marksEntered: updatedRoomStudents.filter(s => s.examMarks > 0).length,
+              marksDraft: updatedRoomStudents.filter(s => s.markEntryStatus === 'draft').length,
+              marksSubmitted: updatedRoomStudents.filter(s => s.markEntryStatus === 'submitted').length,
+              marksFinal: updatedRoomStudents.filter(s => s.markEntryStatus === 'final').length,
               marksPending: updatedRoomStudents.filter(s => !s.examMarks).length
             };
           }
           return room;
         });
         setRooms(updatedRooms);
+        
+        // Update marks object
+        setMarks(prev => ({ ...prev, [studentId]: mark }));
         
         // Update dashboard data if callback provided
         if (onDataUpdate) {
@@ -157,7 +195,7 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
         
         // Show success message (only if not auto-saving)
         if (!autoSave) {
-          toast.success("Marks saved successfully");
+          toast.success("Marks saved as draft");
         }
       }
     } catch (error) {
@@ -168,13 +206,132 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
     }
   };
 
+  // Submit single mark
+  const handleSubmitSingleMark = async () => {
+    if (!selectedStudentForSubmit) return;
+    
+    const studentId = selectedStudentForSubmit._id;
+    const student = students.find(s => s._id === studentId);
+    
+    if (!student.examMarks) {
+      toast.error("Please enter marks before submitting");
+      setSubmitDialogOpen(false);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('invigilatorToken');
+      const response = await axios.post(
+        `https://apinmea.oxiumev.com/api/invigilator/students/${studentId}/submit`,
+        {},
+        {
+          headers: { "x-auth-token": token },
+        }
+      );
+
+      if (response.data.success) {
+        // Update local state
+        const updatedStudents = students.map(student => 
+          student._id === studentId 
+            ? { ...student, markEntryStatus: 'submitted', submittedAt: new Date() }
+            : student
+        );
+        setStudents(updatedStudents);
+        
+        // Update room data
+        const updatedRooms = rooms.map(room => {
+          if (room.roomNo === selectedRoom) {
+            const updatedRoomStudents = room.students.map(student => 
+              student._id === studentId 
+                ? { ...student, markEntryStatus: 'submitted', submittedAt: new Date() }
+                : student
+            );
+            return {
+              ...room,
+              students: updatedRoomStudents,
+              marksDraft: updatedRoomStudents.filter(s => s.markEntryStatus === 'draft').length,
+              marksSubmitted: updatedRoomStudents.filter(s => s.markEntryStatus === 'submitted').length,
+            };
+          }
+          return room;
+        });
+        setRooms(updatedRooms);
+        
+        if (onDataUpdate) {
+          onDataUpdate();
+        }
+        
+        toast.success("Marks submitted successfully");
+        setSubmitDialogOpen(false);
+        setSelectedStudentForSubmit(null);
+      }
+    } catch (error) {
+      console.error("Error submitting marks:", error);
+      toast.error(error.response?.data?.error || "Failed to submit marks");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Submit all marks for current room
+  const handleSubmitAllMarks = async () => {
+    const draftStudents = students.filter(s => s.markEntryStatus === 'draft');
+    
+    if (draftStudents.length === 0) {
+      toast.info("No draft marks to submit in this room");
+      setSubmitAllDialogOpen(false);
+      return;
+    }
+
+    // Check if all students have marks entered
+    const studentsWithNoMarks = students.filter(s => !s.examMarks);
+    if (studentsWithNoMarks.length > 0) {
+      toast.error(`Cannot submit: ${studentsWithNoMarks.length} students have no marks entered`);
+      setSubmitAllDialogOpen(false);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem('invigilatorToken');
+      const response = await axios.post(
+        `https://apinmea.oxiumev.com/api/invigilator/rooms/${selectedRoom}/submit-all`,
+        {},
+        {
+          headers: { "x-auth-token": token },
+        }
+      );
+
+      if (response.data.success) {
+        // Refresh room data
+        await refreshRoomData();
+        
+        if (onDataUpdate) {
+          onDataUpdate();
+        }
+        
+        toast.success(response.data.message);
+        setSubmitAllDialogOpen(false);
+      }
+    } catch (error) {
+      console.error("Error submitting room marks:", error);
+      toast.error(error.response?.data?.error || "Failed to submit room marks");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // Save all marks
   const handleSaveAllMarks = async () => {
     const marksToSave = Object.entries(marks)
-      .filter(([studentId, mark]) => 
-        mark !== '' && mark !== undefined && mark !== null && 
-        mark !== students.find(s => s._id === studentId)?.examMarks
-      )
+      .filter(([studentId, mark]) => {
+        const student = students.find(s => s._id === studentId);
+        return mark !== '' && mark !== undefined && mark !== null && 
+               parseInt(mark) !== student?.examMarks &&
+               student?.markEntryStatus !== 'submitted' &&
+               student?.markEntryStatus !== 'final';
+      })
       .map(([studentId, mark]) => ({ 
         studentId, 
         marks: parseInt(mark) 
@@ -210,48 +367,9 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
       const failedSaves = results.filter(r => !r.success);
 
       if (successfulSaves.length > 0) {
-        // Update local state for successful saves
-        const updatedStudents = [...students];
-        const updatedRooms = [...rooms];
+        // Refresh room data
+        await refreshRoomData();
         
-        successfulSaves.forEach(({ studentId, data }) => {
-          // Update student in students array
-          const studentIndex = updatedStudents.findIndex(s => s._id === studentId);
-          if (studentIndex !== -1 && data?.data?.student) {
-            updatedStudents[studentIndex] = {
-              ...updatedStudents[studentIndex],
-              examMarks: data.data.student.examMarks,
-              resultStatus: data.data.student.resultStatus
-            };
-          }
-          
-          // Update student in rooms array
-          updatedRooms.forEach(room => {
-            if (room.roomNo === selectedRoom) {
-              const roomStudentIndex = room.students.findIndex(s => s._id === studentId);
-              if (roomStudentIndex !== -1 && data?.data?.student) {
-                room.students[roomStudentIndex] = {
-                  ...room.students[roomStudentIndex],
-                  examMarks: data.data.student.examMarks,
-                  resultStatus: data.data.student.resultStatus
-                };
-              }
-            }
-          });
-        });
-
-        // Recalculate room statistics
-        updatedRooms.forEach(room => {
-          if (room.roomNo === selectedRoom) {
-            room.marksEntered = room.students.filter(s => s.examMarks > 0).length;
-            room.marksPending = room.students.filter(s => !s.examMarks).length;
-          }
-        });
-
-        setStudents(updatedStudents);
-        setRooms(updatedRooms);
-        
-        // Update dashboard data if callback provided
         if (onDataUpdate) {
           onDataUpdate();
         }
@@ -363,6 +481,17 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
     toast.success("Data refreshed");
   };
 
+  // View mark history
+  const handleViewHistory = (studentId) => {
+    navigate(`/invigilator/history/${studentId}`);
+  };
+
+  // Open submit dialog for single student
+  const handleOpenSubmitDialog = (student) => {
+    setSelectedStudentForSubmit(student);
+    setSubmitDialogOpen(true);
+  };
+
   // Calculate progress
   const calculateProgress = () => {
     const totalStudents = students.length;
@@ -370,6 +499,11 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
       mark !== '' && mark !== undefined && mark !== null
     ).length;
     return totalStudents > 0 ? (enteredMarks / totalStudents) * 100 : 0;
+  };
+
+  // Check if student is editable
+  const isStudentEditable = (student) => {
+    return student.markEntryStatus !== 'submitted' && student.markEntryStatus !== 'final';
   };
 
   // Get room by selectedRoom
@@ -389,7 +523,7 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
         Enter Marks
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-        Enter exam marks for students in your assigned rooms
+        Enter exam marks for students in your assigned rooms. Save as draft, then submit when final.
       </Typography>
 
       {/* Room Selection */}
@@ -401,10 +535,15 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
           {rooms.map((room) => (
             <Chip
               key={room.roomNo}
-              label={`Room ${room.roomNo} (${room.marksEntered}/${room.totalStudents})`}
+              label={`Room ${room.roomNo} (D:${room.marksDraft || 0} S:${room.marksSubmitted || 0} F:${room.marksFinal || 0} P:${room.marksPending})`}
               color={selectedRoom === room.roomNo ? "primary" : "default"}
               onClick={() => handleRoomSelect(room.roomNo)}
-              icon={room.marksPending > 0 ? <WarningIcon /> : <CheckCircleIcon />}
+              icon={
+                room.marksDraft > 0 ? <WarningIcon /> : 
+                room.marksSubmitted === room.totalStudents ? <CheckCircleIcon /> : 
+                room.marksFinal === room.totalStudents ? <LockIcon /> :
+                <AssignmentIcon />
+              }
             />
           ))}
         </Box>
@@ -428,37 +567,29 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
               </Typography>
             </Box>
           </Grid>
-          {/* <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6}>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: { md: 'flex-end' } }}>
-              <Button
+              {/* <Button
                 variant="outlined"
-                startIcon={<RefreshIcon />}
-                onClick={handleRefresh}
-                disabled={loading}
-                size="small"
-              >
-                {loading ? 'Refreshing...' : 'Refresh'}
-              </Button>
-              <Button
-                variant="outlined"
-                startIcon={<AutoSaveIcon />}
-                onClick={() => setAutoSave(!autoSave)}
-                color={autoSave ? "success" : "default"}
-                size="small"
-              >
-                Auto-save {autoSave ? 'ON' : 'OFF'}
-              </Button>
-              <Button
-                variant="contained"
                 startIcon={<SaveIcon />}
                 onClick={handleSaveAllMarks}
                 disabled={saving}
                 size="small"
               >
                 {saving ? 'Saving...' : 'Save All'}
+              </Button> */}
+              <Button
+                variant="contained"
+                color="success"
+                startIcon={<SendIcon />}
+                onClick={() => setSubmitAllDialogOpen(true)}
+                disabled={submitting || !students.some(s => s.markEntryStatus === 'draft')}
+                size="small"
+              >
+                Submit All
               </Button>
             </Box>
-          </Grid> */}
+          </Grid>
         </Grid>
       </Paper>
 
@@ -470,107 +601,234 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
               <TableCell>Seat No</TableCell>
               <TableCell>Student</TableCell>
               <TableCell>Registration Code</TableCell>
-              <TableCell>Previous Marks</TableCell>
+              <TableCell>Current Marks</TableCell>
               <TableCell>Enter Marks (0-100)</TableCell>
               <TableCell>Status</TableCell>
-              {/* <TableCell>Action</TableCell> */}
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {students.map((student) => (
-              <TableRow key={student._id} hover>
-                <TableCell>
-                  <Chip label={student.seatNo} size="small" />
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Avatar sx={{ bgcolor: '#2563eb' }}>
-                      {student.name.charAt(0)}
-                    </Avatar>
-                    <Box>
-                      <Typography variant="body2" fontWeight={500}>
-                        {student.name}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {student.studyingClass}
-                      </Typography>
+            {students.map((student) => {
+              const editable = isStudentEditable(student);
+              
+              return (
+                <TableRow 
+                  key={student._id} 
+                  hover
+                  sx={{
+                    bgcolor: student.markEntryStatus === 'final' ? '#f5f5f5' : 'inherit',
+                    opacity: student.markEntryStatus === 'final' ? 0.8 : 1
+                  }}
+                >
+                  <TableCell>
+                    <Chip label={student.seatNo} size="small" />
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Avatar sx={{ bgcolor: '#2563eb' }}>
+                        {student.name.charAt(0)}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2" fontWeight={500}>
+                          {student.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {student.studyingClass}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontFamily="monospace">
-                    {student.registrationCode}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" fontWeight={600}>
-                    {student.examMarks || '-'}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <TextField
-                      size="small"
-                      type="number"
-                      value={marks[student._id] || ''}
-                      onChange={(e) => handleMarkChange(student._id, e.target.value)}
-                      onBlur={(e) => {
-                        if (!autoSave && e.target.value && parseInt(e.target.value) !== student.examMarks) {
-                          handleSaveSingleMark(student._id, e.target.value);
-                        }
-                      }}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter' && !autoSave) {
-                          if (e.target.value && parseInt(e.target.value) !== student.examMarks) {
-                            handleSaveSingleMark(student._id, e.target.value);
-                          }
-                        }
-                      }}
-                      inputProps={{ 
-                        min: 0, 
-                        max: 100,
-                        style: { textAlign: 'center' }
-                      }}
-                      sx={{ width: 80 }}
-                      disabled={savingStudentId === student._id}
-                    />
-                    {savingStudentId === student._id && (
-                      <CircularProgress size={16} />
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontFamily="monospace">
+                      {student.registrationCode}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" fontWeight={600}>
+                      {student.examMarks || '-'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {editable ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <TextField
+                          size="small"
+                          type="number"
+                          value={marks[student._id] || ''}
+                          onChange={(e) => handleMarkChange(student._id, e.target.value)}
+                          onBlur={(e) => {
+                            if (!autoSave && e.target.value && parseInt(e.target.value) !== student.examMarks) {
+                              handleSaveSingleMark(student._id, e.target.value);
+                            }
+                          }}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter' && !autoSave) {
+                              if (e.target.value && parseInt(e.target.value) !== student.examMarks) {
+                                handleSaveSingleMark(student._id, e.target.value);
+                              }
+                            }
+                          }}
+                          inputProps={{ 
+                            min: 0, 
+                            max: 100,
+                            style: { textAlign: 'center' }
+                          }}
+                          sx={{ width: 80 }}
+                          disabled={savingStudentId === student._id}
+                        />
+                        {savingStudentId === student._id && (
+                          <CircularProgress size={16} />
+                        )}
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                        {student.markEntryStatus === 'final' ? 'Finalized - Not Editable' : 'Submitted - Not Editable'}
+                      </Typography>
                     )}
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  {marks[student._id] !== undefined && marks[student._id] !== '' ? (
-                    <Chip label="Entered" color="success" size="small" />
-                  ) : student.examMarks ? (
-                    <Chip label="Previously Entered" color="info" size="small" />
-                  ) : (
-                    <Chip label="Pending" color="warning" size="small" />
-                  )}
-                </TableCell>
-                {/* <TableCell>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => {
-                      if (marks[student._id] && marks[student._id] !== student.examMarks) {
-                        handleSaveSingleMark(student._id, marks[student._id]);
-                      }
-                    }}
-                    disabled={
-                      !marks[student._id] || 
-                      parseInt(marks[student._id]) === student.examMarks ||
-                      savingStudentId === student._id
-                    }
-                  >
-                    Save
-                  </Button>
-                </TableCell> */}
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell>
+                    {student.markEntryStatus === 'final' ? (
+                      <Chip 
+                        label="Final" 
+                        color="secondary" 
+                        size="small" 
+                        icon={<LockIcon />}
+                      />
+                    ) : student.markEntryStatus === 'submitted' ? (
+                      <Chip 
+                        label="Submitted" 
+                        color="success" 
+                        size="small" 
+                        icon={<CheckCircleIcon />}
+                      />
+                    ) : student.markEntryStatus === 'draft' ? (
+                      <Chip 
+                        label="Draft" 
+                        color="info" 
+                        size="small" 
+                        icon={<SaveIcon />}
+                      />
+                    ) : student.examMarks ? (
+                      <Chip label="Previously Entered" color="default" size="small" />
+                    ) : (
+                      <Chip label="Pending" color="warning" size="small" />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      {editable && (
+                        <>
+                          <Tooltip title="Save">
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                if (marks[student._id] && parseInt(marks[student._id]) !== student.examMarks) {
+                                  handleSaveSingleMark(student._id, marks[student._id]);
+                                }
+                              }}
+                              disabled={
+                                !marks[student._id] || 
+                                parseInt(marks[student._id]) === student.examMarks ||
+                                savingStudentId === student._id
+                              }
+                              color="primary"
+                            >
+                              <SaveIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          {/* {student.markEntryStatus === 'draft' && (
+                            <Tooltip title="Submit">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleOpenSubmitDialog(student)}
+                                disabled={!student.examMarks || submitting}
+                                color="success"
+                              >
+                                <SendIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          )} */}
+                        </>
+                      )}
+                      <Tooltip title="View History">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleViewHistory(student._id)}
+                          color="info"
+                        >
+                          <HistoryIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Submit Single Student Dialog */}
+      <Dialog open={submitDialogOpen} onClose={() => setSubmitDialogOpen(false)}>
+        <DialogTitle>Submit Marks</DialogTitle>
+        <DialogContent>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Are you sure you want to submit marks for {selectedStudentForSubmit?.name}?
+          </Alert>
+          <Typography variant="body2" gutterBottom>
+            Registration: {selectedStudentForSubmit?.registrationCode}
+          </Typography>
+          <Typography variant="body2" gutterBottom>
+            Marks: {selectedStudentForSubmit?.examMarks}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            Once submitted, you cannot edit these marks. Admin can still make changes before rank generation.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSubmitDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="success"
+            onClick={handleSubmitSingleMark}
+            disabled={submitting}
+          >
+            {submitting ? 'Submitting...' : 'Submit'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Submit All Dialog */}
+      <Dialog open={submitAllDialogOpen} onClose={() => setSubmitAllDialogOpen(false)}>
+        <DialogTitle>Submit All Marks</DialogTitle>
+        <DialogContent>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Are you sure you want to submit all marks for Room {selectedRoom}?
+          </Alert>
+          <Typography variant="body2" gutterBottom>
+            This will:
+          </Typography>
+          <Box component="ul" sx={{ pl: 2, mb: 2 }}>
+            <li>Submit {students.filter(s => s.markEntryStatus === 'draft').length} draft marks</li>
+            <li>Make marks non-editable by you</li>
+            <li>Allow admin to review before rank generation</li>
+          </Box>
+          <Typography variant="body2" color="text.secondary">
+            Once submitted, you cannot edit these marks. Admin can still make changes before rank generation.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSubmitAllDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            color="success"
+            onClick={handleSubmitAllMarks}
+            disabled={submitting}
+          >
+            {submitting ? 'Submitting...' : 'Submit All'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Bulk Entry Dialog */}
       <Dialog open={bulkDialogOpen} onClose={() => setBulkDialogOpen(false)} maxWidth="md" fullWidth>
@@ -608,7 +866,5 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
     </Box>
   );
 };
-
-
 
 export default EnterMarks;
