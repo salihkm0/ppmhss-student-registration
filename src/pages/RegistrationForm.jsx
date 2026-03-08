@@ -1494,7 +1494,7 @@ const RegistrationForm = () => {
             >
               <Button
                 variant="contained"
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/results")}
                 startIcon={<AssignmentIcon />}
                 size="large"
                 sx={{ 
