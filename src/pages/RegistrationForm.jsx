@@ -1494,7 +1494,7 @@ const RegistrationForm = () => {
             >
               <Button
                 variant="contained"
-                onClick={() => navigate("/lookup")}
+                onClick={() => navigate("/")}
                 startIcon={<AssignmentIcon />}
                 size="large"
                 sx={{ 
@@ -1503,7 +1503,7 @@ const RegistrationForm = () => {
                   py: 1.5
                 }}
               >
-                Check Registration Status
+                Check Your Result
               </Button>
             </Box>
           </Paper>

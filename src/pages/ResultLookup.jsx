@@ -51,6 +51,9 @@ import {
   ArrowBack as ArrowBackIcon,
   School as TrainingIcon,
   WorkspacePremium as PremiumIcon,
+  EmojiEvents as EmojiEventsIcon,
+  SentimentVeryDissatisfied as SadIcon,
+  Celebration as CelebrationIcon,
 } from "@mui/icons-material";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -129,12 +132,6 @@ const ResultLookup = () => {
     setError("");
   };
 
-  const getResultColor = (result) => {
-    if (result === "Passed" || result === true) return "success";
-    if (result === "Failed" || result === false) return "error";
-    return "default";
-  };
-
   const getMedalIcon = (rank) => {
     if (rank === 1) return <MedalIcon sx={{ color: "#FFD700" }} />; // Gold
     if (rank === 2) return <MedalIcon sx={{ color: "#C0C0C0" }} />; // Silver
@@ -172,6 +169,33 @@ const ResultLookup = () => {
     const message = 'Hello, I need assistance with the NMEA TENDER SCHOLAR 26 results.';
     const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
+  };
+
+  // Helper function to get scholarship value (handles both scholarship and scholarshipType)
+  const getScholarshipValue = (result) => {
+    return result?.scholarship || result?.scholarshipType || '';
+  };
+
+  // UPDATED: Check if student is selected based on marks >= 15
+  const isStudentSelected = (student) => {
+    const marks = student?.examMarks || 0;
+    return marks >= 15;
+  };
+
+  // UPDATED: Check if student is eligible for IAS Coaching (rank <= 100 AND marks >= 15)
+  const isIASEligible = (student) => {
+    const marks = student?.examMarks || 0;
+    const rank = student?.rank || 0;
+    return (rank <= 100) && (marks >= 15);
+  };
+
+  // Get qualification message based on marks
+  const getQualificationMessage = (marks) => {
+    if (marks >= 15) {
+      return "Qualified (15+ marks)";
+    } else {
+      return "Not Qualified (Below 15 marks)";
+    }
   };
 
   return (
@@ -422,6 +446,72 @@ const ResultLookup = () => {
                 Result Details
               </Typography>
 
+              {/* Selection Status Message */}
+              {isStudentSelected(result.result) ? (
+                <Card 
+                  variant="outlined" 
+                  sx={{ 
+                    mb: 3, 
+                    p: 3, 
+                    textAlign: 'center',
+                    background: 'linear-gradient(145deg, #f3e5f5 0%, #e1f5fe 100%)',
+                    border: '2px solid #4caf50'
+                  }}
+                >
+                  <CelebrationIcon sx={{ fontSize: 60, color: '#4caf50', mb: 2 }} />
+                  
+                  <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, color: '#2e7d32' }}>
+                    Congratulations! 🎉
+                  </Typography>
+                  
+                  <Typography variant="body1" sx={{ mb: 2, fontSize: '1.1rem' }}>
+                    You have been selected for the one-day <strong>Butterfly Workshop 2026.</strong>
+                  </Typography>
+                  
+                  <Typography variant="body1" sx={{ mb: 2, fontStyle: 'italic' }}>
+                    Further details will be shared through the WhatsApp group.
+                  </Typography>
+                  
+                  <Alert severity="info" sx={{ mt: 2, textAlign: 'left' }}>
+                    <Typography variant="body2">
+                      <strong>Note:</strong> We will add you to the official WhatsApp group soon. 
+                      Please keep your phone number active.
+                    </Typography>
+                  </Alert>
+                </Card>
+              ) : (
+                <Card 
+                  variant="outlined" 
+                  sx={{ 
+                    mb: 3, 
+                    p: 3, 
+                    textAlign: 'center',
+                    background: '#f5f5f5',
+                    border: '2px solid #f44336'
+                  }}
+                >
+                  <SadIcon sx={{ fontSize: 60, color: '#f44336', mb: 2 }} />
+                  
+                  <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, color: '#d32f2f' }}>
+                    Sorry! 😔
+                  </Typography>
+                  
+                  <Typography variant="body1" sx={{ mb: 2, fontSize: '1.1rem' }}>
+                    You have not been selected for the Butterfly Workshop 2026.
+                  </Typography>
+                  
+                  <Typography variant="body1" color="text.secondary">
+                    We encourage you to participate in future events and keep improving.
+                  </Typography>
+                  
+                  <Alert severity="warning" sx={{ mt: 2, textAlign: 'left' }}>
+                    <Typography variant="body2">
+                      <strong>Note:</strong> Minimum 15 marks required for selection.
+                    </Typography>
+                  </Alert>
+                </Card>
+              )}
+
               {/* Student Info Card */}
               <Card variant="outlined" sx={{ mb: 2 }}>
                 <CardContent sx={{ p: 2 }}>
@@ -456,86 +546,46 @@ const ResultLookup = () => {
                   </Grid>
                 </CardContent>
               </Card>
+              
 
-              {/* Performance Metrics */}
+              {/* Marks and Rank Card */}
               <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={4}>
-                  <Card variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Marks Obtained
-                    </Typography>
-                    <Typography variant="h5" color="primary" fontWeight={600}>
-                      {result.result.examMarks || 0}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      out of {result.result.totalMarks || 100}
-                    </Typography>
-                  </Card>
-                </Grid>
-                
-                <Grid item xs={12} sm={4}>
-                  <Card variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Percentage
-                    </Typography>
-                    <Typography variant="h5" color="secondary" fontWeight={600}>
-                      {result.result.percentage?.toFixed(2) || 0}%
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Score
-                    </Typography>
-                  </Card>
-                </Grid>
-                
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12} sm={6}>
                   <Card variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
                     <Typography variant="body2" color="text.secondary" gutterBottom>
                       Rank
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
                       {getMedalIcon(result.result.rank)}
-                      <Typography variant="h5" fontWeight={600}>
+                      <Typography variant="h4" fontWeight={600}>
                         {result.result.rank || "N/A"}
                       </Typography>
                     </Box>
                     <Typography variant="caption" color="text.secondary">
-                      Position
+                      Overall Position
+                    </Typography>
+                  </Card>
+                </Grid>
+                
+                <Grid item xs={12} sm={6}>
+                  <Card variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Scholarship
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                      <EmojiEventsIcon color={getScholarshipColor(getScholarshipValue(result.result))} />
+                      <Typography variant="h6" fontWeight={600}>
+                        {getScholarshipValue(result.result) || "Not Eligible"}
+                      </Typography>
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                      {getScholarshipText(getScholarshipValue(result.result))}
                     </Typography>
                   </Card>
                 </Grid>
               </Grid>
 
-              {/* Status and Eligibility */}
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} md={6}>
-                  <Card variant="outlined" sx={{ p: 2 }}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Result Status
-                    </Typography>
-                    <Chip
-                      label={result.result.isQualified ? "QUALIFIED" : "NOT QUALIFIED"}
-                      color={getResultColor(result.result.isQualified)}
-                      icon={result.result.isQualified ? <CheckCircleIcon /> : <CancelIcon />}
-                      size="medium"
-                      sx={{ fontWeight: 600 }}
-                    />
-                  </Card>
-                </Grid>
-                
-                <Grid item xs={12} md={6}>
-                  <Card variant="outlined" sx={{ p: 2 }}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Scholarship Status
-                    </Typography>
-                    <Chip
-                      label={getScholarshipText(result.result.scholarshipType)}
-                      color={getScholarshipColor(result.result.scholarshipType)}
-                      size="medium"
-                      sx={{ fontWeight: 600 }}
-                    />
-                  </Card>
-                </Grid>
-              </Grid>
+              
 
               {/* Additional Information */}
               <Card variant="outlined" sx={{ mb: 3 }}>
@@ -581,10 +631,36 @@ const ResultLookup = () => {
                             IAS Coaching Eligibility
                           </Typography>
                           <Chip
-                            label={result.result.iasCoaching ? "ELIGIBLE" : "NOT ELIGIBLE"}
-                            color={result.result.iasCoaching ? "success" : "default"}
+                            label={isIASEligible(result.result) ? "ELIGIBLE" : "NOT ELIGIBLE"}
+                            color={isIASEligible(result.result) ? "success" : "default"}
                             size="small"
                           />
+                          <Typography variant="caption" display="block" color="text.secondary">
+                            {isIASEligible(result.result) 
+                              ? "Top 100 rank with 15+ marks" 
+                              : ""}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+                    
+                    <Grid item xs={12} sm={6}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                        <HomeWorkIcon fontSize="small" color="action" />
+                        <Box>
+                          <Typography variant="body2" color="text.secondary">
+                            Selection Status
+                          </Typography>
+                          <Chip
+                            label={isStudentSelected(result.result) ? "SELECTED" : "NOT SELECTED"}
+                            color={isStudentSelected(result.result) ? "success" : "default"}
+                            size="small"
+                          />
+                          <Typography variant="caption" display="block" color="text.secondary">
+                            {isStudentSelected(result.result) 
+                              ? "Eligible for Butterfly Workshop" 
+                              : "Requires 15+ marks"}
+                          </Typography>
                         </Box>
                       </Box>
                     </Grid>
@@ -595,7 +671,12 @@ const ResultLookup = () => {
               {/* Note */}
               <Alert severity="info">
                 <Typography variant="body2">
-                  <strong>Note:</strong> Top 3 students receive scholarships. Top 100 students are eligible for IAS coaching.
+                  <strong>Note:</strong> 
+                  <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                    <li>Minimum 15 marks required for Butterfly Workshop selection</li>
+                    <li>Top 3 students receive Gold/Silver/Bronze scholarships</li>
+                    <li>Top 100 students with 15+ marks are eligible for IAS coaching</li>
+                  </ul>
                 </Typography>
               </Alert>
             </Box>
@@ -618,10 +699,12 @@ const ResultLookup = () => {
                     <TableRow sx={{ bgcolor: 'action.hover' }}>
                       <TableCell><strong>Student</strong></TableCell>
                       <TableCell><strong>Code</strong></TableCell>
-                      <TableCell align="right"><strong>Marks</strong></TableCell>
+                      <TableCell align="center"><strong>Marks</strong></TableCell>
                       <TableCell align="center"><strong>Rank</strong></TableCell>
-                      <TableCell align="center"><strong>Status</strong></TableCell>
-                      <TableCell align="center"><strong>Action</strong></TableCell>
+                      <TableCell align="center"><strong>Scholarship</strong></TableCell>
+                      <TableCell align="center"><strong>Selection</strong></TableCell>
+                      <TableCell align="center"><strong>IAS</strong></TableCell>
+                      {/* <TableCell align="center"><strong>Action</strong></TableCell> */}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -647,12 +730,12 @@ const ResultLookup = () => {
                             {result.registrationCode}
                           </Typography>
                         </TableCell>
-                        <TableCell align="right">
+                        <TableCell align="center">
                           <Typography variant="body2" fontWeight={500}>
-                            {result.marks}/{result.totalMarks}
+                            {result.marks || 0}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {result.percentage}%
+                            /{result.totalMarks || 50}
                           </Typography>
                         </TableCell>
                         <TableCell align="center">
@@ -664,13 +747,33 @@ const ResultLookup = () => {
                           </Box>
                         </TableCell>
                         <TableCell align="center">
+                          {result.scholarship || result.scholarshipType ? (
+                            <Chip
+                              label={result.scholarship || result.scholarshipType}
+                              color={getScholarshipColor(result.scholarship || result.scholarshipType)}
+                              size="small"
+                            />
+                          ) : (
+                            <Typography variant="caption" color="text.secondary">
+                              Not Eligible
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell align="center">
                           <Chip
-                            label={result.result}
-                            color={getResultColor(result.result)}
+                            label={result.isSelected ? "SELECTED" : "NOT SELECTED"}
+                            color={result.isSelected ? "success" : "default"}
                             size="small"
                           />
                         </TableCell>
                         <TableCell align="center">
+                          <Chip
+                            label={result.iasCoaching ? "ELIGIBLE" : "NOT ELIGIBLE"}
+                            color={result.iasCoaching ? "success" : "default"}
+                            size="small"
+                          />
+                        </TableCell>
+                        {/* <TableCell align="center">
                           <Button
                             variant="outlined"
                             size="small"
@@ -678,12 +781,12 @@ const ResultLookup = () => {
                             onClick={() => {
                               setSearchType("code");
                               setRegistrationCode(result.registrationCode);
-                              handleSearch();
+                              setTimeout(() => handleSearch(), 100);
                             }}
                           >
                             View
                           </Button>
-                        </TableCell>
+                        </TableCell> */}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -750,18 +853,5 @@ const ResultLookup = () => {
     </Container>
   );
 };
-
-// const ResultLookup = () => {
-//   return (
-//     <Container sx={{ py: 4 }}>
-//       <Typography variant="h4" align="center" gutterBottom>
-//         Results Page Coming Soon!
-//       </Typography>
-//       <Typography variant="body1" align="center">
-//         We are working hard to bring you the results page. Please check back later.
-//       </Typography>
-//     </Container>
-//   );
-// }
 
 export default ResultLookup;
