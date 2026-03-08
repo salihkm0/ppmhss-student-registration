@@ -28,9 +28,10 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import {
-  Search as SearchIcon,
   Assignment as AssignmentIcon,
   Person as PersonIcon,
   School as SchoolIcon,
@@ -39,18 +40,13 @@ import {
   AccountBalance as AccountBalanceIcon,
   WhatsApp as WhatsAppIcon,
   Close as CloseIcon,
-  Download as DownloadIcon,
   Score as ScoreIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
   MilitaryTech as MedalIcon,
-  TrendingUp as TrendingUpIcon,
-  HomeWork as HomeWorkIcon,
   Class as ClassIcon,
-  LocationOn as LocationOnIcon,
   ArrowBack as ArrowBackIcon,
   School as TrainingIcon,
-  WorkspacePremium as PremiumIcon,
   EmojiEvents as EmojiEventsIcon,
   SentimentVeryDissatisfied as SadIcon,
   Celebration as CelebrationIcon,
@@ -61,6 +57,9 @@ import { useNavigate } from "react-router-dom";
 
 const ResultLookup = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const [searchType, setSearchType] = useState("code");
   const [registrationCode, setRegistrationCode] = useState("");
   const [phoneNo, setPhoneNo] = useState("");
@@ -89,7 +88,7 @@ const ResultLookup = () => {
     try {
       if (searchType === "code") {
         const response = await axios.get(
-          `https://apinmea.oxiumev.com/api/results/code/${registrationCode.trim().toUpperCase()}`
+          `https://apinmea.oxiumev.com/api/results/code/${registrationCode.trim().toUpperCase()}`,
         );
 
         if (response.data.success) {
@@ -98,7 +97,7 @@ const ResultLookup = () => {
         }
       } else {
         const response = await axios.get(
-          `https://apinmea.oxiumev.com/api/results/phone/${phoneNo.trim()}`
+          `https://apinmea.oxiumev.com/api/results/phone/${phoneNo.trim()}`,
         );
 
         if (response.data.success) {
@@ -133,20 +132,29 @@ const ResultLookup = () => {
   };
 
   const getMedalIcon = (rank) => {
-    if (rank === 1) return <MedalIcon sx={{ color: "#FFD700" }} />; // Gold
-    if (rank === 2) return <MedalIcon sx={{ color: "#C0C0C0" }} />; // Silver
-    if (rank === 3) return <MedalIcon sx={{ color: "#CD7F32" }} />; // Bronze
+    if (rank === 1)
+      return (
+        <MedalIcon sx={{ color: "#FFD700", fontSize: isMobile ? 20 : 24 }} />
+      );
+    if (rank === 2)
+      return (
+        <MedalIcon sx={{ color: "#C0C0C0", fontSize: isMobile ? 20 : 24 }} />
+      );
+    if (rank === 3)
+      return (
+        <MedalIcon sx={{ color: "#CD7F32", fontSize: isMobile ? 20 : 24 }} />
+      );
     return null;
   };
 
   const getScholarshipText = (scholarship) => {
     switch (scholarship) {
       case "Gold":
-        return "Gold Scholarship (1st Rank)";
+        return "Gold Scholarship";
       case "Silver":
-        return "Silver Scholarship (2nd Rank)";
+        return "Silver Scholarship";
       case "Bronze":
-        return "Bronze Scholarship (3rd Rank)";
+        return "Bronze Scholarship";
       default:
         return "Not Eligible";
     }
@@ -166,42 +174,81 @@ const ResultLookup = () => {
   };
 
   const openWhatsApp = (number) => {
-    const message = 'Hello, I need assistance with the NMEA TENDER SCHOLAR 26 results.';
+    const message =
+      "Hello, I need assistance with the NMEA TENDER SCHOLAR 26 results.";
     const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+    window.open(url, "_blank");
   };
 
-  // Helper function to get scholarship value (handles both scholarship and scholarshipType)
   const getScholarshipValue = (result) => {
-    return result?.scholarship || result?.scholarshipType || '';
+    return result?.scholarship || result?.scholarshipType || "";
   };
 
-  // UPDATED: Check if student is selected based on marks >= 15
   const isStudentSelected = (student) => {
     const marks = student?.examMarks || 0;
     return marks >= 15;
   };
 
-  // UPDATED: Check if student is eligible for IAS Coaching (rank <= 100 AND marks >= 15)
+  // FIXED: Use the API response directly for IAS eligibility
   const isIASEligible = (student) => {
-    const marks = student?.examMarks || 0;
-    const rank = student?.rank || 0;
-    return (rank <= 100) && (marks >= 15);
-  };
-
-  // Get qualification message based on marks
-  const getQualificationMessage = (marks) => {
-    if (marks >= 15) {
-      return "Qualified (15+ marks)";
-    } else {
-      return "Not Qualified (Below 15 marks)";
+    // If the API already provides iasCoaching field, use it
+    if (student?.iasCoaching !== undefined) {
+      return (
+        student.iasCoaching === true ||
+        student.iasCoaching === "Eligible" ||
+        student.iasCoaching === "ELIGIBLE"
+      );
     }
+    // Fallback to calculation if API doesn't provide it
+    const marks = student?.examMarks || student?.marks || 0;
+    const rank = student?.rank || 0;
+    return rank <= 100 && marks >= 15;
   };
 
+  // Helper to normalize scholarship value from API
+  const getNormalizedScholarship = (student) => {
+    if (!student) return "";
+    if (
+      student.scholarship &&
+      student.scholarship !== "Not Eligible" &&
+      student.scholarship !== "Not Eligible"
+    ) {
+      return student.scholarship;
+    }
+    if (student.scholarshipType && student.scholarshipType !== "Not Eligible") {
+      return student.scholarshipType;
+    }
+    return "";
+  };
+
+  // Helper to check if student has scholarship
+  const hasScholarship = (student) => {
+    const scholarship = getNormalizedScholarship(student);
+    return (
+      scholarship === "Gold" ||
+      scholarship === "Silver" ||
+      scholarship === "Bronze"
+    );
+  };
+
+  // Render results
   return (
-    <Container maxWidth="md" sx={{ py: 2, px: { xs: 1, sm: 2 } }}>
+    <Container
+      maxWidth="md"
+      sx={{
+        py: isMobile ? 2 : 3,
+        px: isMobile ? 1.5 : 2,
+      }}
+    >
       {/* WhatsApp Support Button */}
-      <Box sx={{ position: 'fixed', bottom: 20, right: 20, zIndex: 1000 }}>
+      <Box
+        sx={{
+          position: "fixed",
+          bottom: isMobile ? 16 : 24,
+          right: isMobile ? 16 : 24,
+          zIndex: 1000,
+        }}
+      >
         <Button
           variant="contained"
           color="success"
@@ -209,642 +256,522 @@ const ResultLookup = () => {
           startIcon={<WhatsAppIcon />}
           sx={{
             borderRadius: 50,
-            boxShadow: 3,
+            boxShadow: 2,
+            minWidth: isMobile ? "auto" : 180,
+            px: isMobile ? 2 : 3,
+            py: isMobile ? 1 : 1.5,
           }}
         >
-          WhatsApp Support
+          {isMobile ? "Support" : "WhatsApp Support"}
         </Button>
       </Box>
 
       {/* WhatsApp Dialog */}
-      <Dialog 
-        open={whatsappDialog} 
+      <Dialog
+        open={whatsappDialog}
         onClose={() => setWhatsappDialog(false)}
         maxWidth="xs"
         fullWidth
+        fullScreen={isMobile}
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="h6">WhatsApp Support</Typography>
+        <DialogTitle
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            px: isMobile ? 2 : 3,
+            py: isMobile ? 1.5 : 2,
+          }}
+        >
+          <Typography variant={isMobile ? "subtitle1" : "h6"}>
+            WhatsApp Support
+          </Typography>
           <IconButton onClick={() => setWhatsappDialog(false)} size="small">
             <CloseIcon />
           </IconButton>
         </DialogTitle>
-        <DialogContent>
+        <DialogContent sx={{ px: isMobile ? 2 : 3 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Contact our support team on WhatsApp for assistance:
           </Typography>
-          
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <Button
               variant="outlined"
               color="success"
               startIcon={<WhatsAppIcon />}
-              onClick={() => openWhatsApp('919947073499')}
+              onClick={() => openWhatsApp("919947073499")}
               fullWidth
+              size={isMobile ? "medium" : "large"}
             >
               99470 73499
             </Button>
-            
             <Button
               variant="outlined"
               color="success"
               startIcon={<WhatsAppIcon />}
-              onClick={() => openWhatsApp('918547645640')}
+              onClick={() => openWhatsApp("918547645640")}
               fullWidth
+              size={isMobile ? "medium" : "large"}
             >
               85476 45640
             </Button>
           </Box>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setWhatsappDialog(false)}>Close</Button>
+        <DialogActions sx={{ px: isMobile ? 2 : 3, pb: isMobile ? 2 : 3 }}>
+          <Button
+            onClick={() => setWhatsappDialog(false)}
+            variant="contained"
+            fullWidth={isMobile}
+          >
+            Close
+          </Button>
         </DialogActions>
       </Dialog>
 
       {/* Back Button */}
       <Button
         variant="outlined"
-        onClick={() => navigate('/')}
+        onClick={() => navigate("/")}
         startIcon={<ArrowBackIcon />}
-        sx={{ mb: 3 }}
-        size="small"
+        sx={{ mb: isMobile ? 2 : 3 }}
+        size={isMobile ? "small" : "medium"}
       >
         Back to Registration
       </Button>
 
-      {/* Header with Logos */}
-      <Card sx={{ mb: 3, borderRadius: 2, border: 1, borderColor: 'divider' }}>
-        <CardContent sx={{ p: 2 }}>
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: { xs: 'column', sm: 'row' }, 
-            alignItems: 'center', 
-            justifyContent: 'space-between',
-            gap: 2 
-          }}>
-            {/* Left: School Logo */}
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center',
-              flex: 1 
-            }}>
-              <Box
-                component="img"
-                src="https://res.cloudinary.com/dmjqgjcut/image/upload/v1769946977/school-logo_uugskb.jpg"
-                alt="School Logo"
-                sx={{
-                  width: 80,
-                  height: 80,
-                  objectFit: 'contain',
-                  mb: 1
-                }}
-              />
-              <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
-                School Logo
-              </Typography>
-            </Box>
-
-            {/* Center: Title */}
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center',
-              flex: 2 
-            }}>
-              <Typography variant="h5" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
-                NMEA TENDER SCHOLAR 26
-              </Typography>
-              <Typography variant="subtitle1" gutterBottom sx={{ color: 'text.secondary' }}>
-                Exam Results Portal
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                PPMHSS Kottukkara, Kondotty, Malappuram
-              </Typography>
-            </Box>
-
-            {/* Right: 50th Anniversary Logo */}
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center',
-              flex: 1 
-            }}>
-              <Box
-                component="img"
-                src="https://res.cloudinary.com/dmjqgjcut/image/upload/v1769946976/50th_t44gva.jpg"
-                alt="50th Anniversary Logo"
-                sx={{
-                  width: 80,
-                  height: 80,
-                  objectFit: 'contain',
-                  mb: 1
-                }}
-              />
-              <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center' }}>
-                50th Anniversary
-              </Typography>
-            </Box>
+      {/* Header */}
+      <Card sx={{ mb: isMobile ? 2 : 3, borderRadius: 2 }}>
+        <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+          <Box sx={{ textAlign: "center" }}>
+            <Typography
+              variant={isMobile ? "h6" : "h5"}
+              gutterBottom
+              sx={{ fontWeight: 600 }}
+            >
+              NMEA TENDER SCHOLAR 26
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Exam Results Portal
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+              sx={{ mt: 0.5 }}
+            >
+              PPMHSS Kottukkara, Kondotty, Malappuram
+            </Typography>
           </Box>
         </CardContent>
       </Card>
 
-      {/* Main Content */}
-      <Card sx={{ borderRadius: 2, border: 1, borderColor: 'divider', mb: 3 }}>
-        <CardContent sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <ScoreIcon /> Check Exam Results
-          </Typography>
-          
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Enter your registration code or phone number to view your exam results
+      {/* Search Card */}
+      <Card sx={{ borderRadius: 2, mb: isMobile ? 2 : 3 }}>
+        <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+          <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
+            Check Exam Results
           </Typography>
 
-          {/* Search Tabs */}
-          <Box sx={{ mb: 3 }}>
-            <Tabs
-              value={searchType}
-              onChange={handleTabChange}
-              sx={{ mb: 3 }}
-              variant="fullWidth"
-            >
-              <Tab
-                label="By Registration Code"
-                value="code"
-                icon={<AssignmentIcon fontSize="small" />}
-                iconPosition="start"
-                sx={{ minHeight: 48 }}
-              />
-              <Tab
-                label="By Phone Number"
-                value="phone"
-                icon={<PhoneIcon fontSize="small" />}
-                iconPosition="start"
-                sx={{ minHeight: 48 }}
-              />
-            </Tabs>
-
-            {searchType === "code" ? (
-              <TextField
-                fullWidth
-                label="Registration Code"
-                value={registrationCode}
-                onChange={(e) => setRegistrationCode(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Enter your registration code (e.g., PPM1001)"
-                size="small"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <AssignmentIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            ) : (
-              <TextField
-                fullWidth
-                label="Phone Number"
-                value={phoneNo}
-                onChange={(e) => setPhoneNo(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Enter your 10-digit phone number"
-                size="small"
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <PhoneIcon fontSize="small" />
-                    </InputAdornment>
-                  ),
-                  inputProps: { maxLength: 10 },
-                }}
-              />
-            )}
-
-            <Button
-              variant="contained"
+          {searchType === "code" ? (
+            <TextField
               fullWidth
-              onClick={handleSearch}
-              disabled={loading}
-              sx={{ mt: 2 }}
-              size="small"
-            >
-              {loading ? <CircularProgress size={20} /> : "Search Results"}
-            </Button>
-          </Box>
-
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
-            </Alert>
+              label="Registration Code"
+              value={registrationCode}
+              onChange={(e) => setRegistrationCode(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Enter your registration code"
+              size={isMobile ? "small" : "medium"}
+              margin="normal"
+            />
+          ) : (
+            <TextField
+              fullWidth
+              label="Phone Number"
+              value={phoneNo}
+              onChange={(e) => setPhoneNo(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Enter your 10-digit phone number"
+              size={isMobile ? "small" : "medium"}
+              margin="normal"
+              inputProps={{ maxLength: 10 }}
+            />
           )}
 
-          {/* Single Result Display */}
-          {result && (
-            <Box>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                Result Details
-              </Typography>
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleSearch}
+            disabled={loading}
+            sx={{ mt: 2 }}
+            size={isMobile ? "medium" : "large"}
+          >
+            {loading ? <CircularProgress size={24} /> : "Search Results"}
+          </Button>
+        </CardContent>
+      </Card>
 
-              {/* Selection Status Message */}
-              {isStudentSelected(result.result) ? (
-                <Card 
-                  variant="outlined" 
-                  sx={{ 
-                    mb: 3, 
-                    p: 3, 
-                    textAlign: 'center',
-                    background: 'linear-gradient(145deg, #f3e5f5 0%, #e1f5fe 100%)',
-                    border: '2px solid #4caf50'
-                  }}
-                >
-                  <CelebrationIcon sx={{ fontSize: 60, color: '#4caf50', mb: 2 }} />
-                  
-                  <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, color: '#2e7d32' }}>
-                    Congratulations! 🎉
-                  </Typography>
-                  
-                  <Typography variant="body1" sx={{ mb: 2, fontSize: '1.1rem' }}>
-                    You have been selected for the one-day <strong>Butterfly Workshop 2026.</strong>
-                  </Typography>
-                  
-                  <Typography variant="body1" sx={{ mb: 2, fontStyle: 'italic' }}>
-                    Further details will be shared through the WhatsApp group.
-                  </Typography>
-                  
-                  <Alert severity="info" sx={{ mt: 2, textAlign: 'left' }}>
-                    <Typography variant="body2">
-                      <strong>Note:</strong> We will add you to the official WhatsApp group soon. 
-                      Please keep your phone number active.
-                    </Typography>
-                  </Alert>
-                </Card>
-              ) : (
-                <Card 
-                  variant="outlined" 
-                  sx={{ 
-                    mb: 3, 
-                    p: 3, 
-                    textAlign: 'center',
-                    background: '#f5f5f5',
-                    border: '2px solid #f44336'
-                  }}
-                >
-                  <SadIcon sx={{ fontSize: 60, color: '#f44336', mb: 2 }} />
-                  
-                  <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, color: '#d32f2f' }}>
-                    Sorry! 😔
-                  </Typography>
-                  
-                  <Typography variant="body1" sx={{ mb: 2, fontSize: '1.1rem' }}>
-                    You have not been selected for the Butterfly Workshop 2026.
-                  </Typography>
-                  
-                  <Typography variant="body1" color="text.secondary">
-                    We encourage you to participate in future events and keep improving.
-                  </Typography>
-                  
-                  <Alert severity="warning" sx={{ mt: 2, textAlign: 'left' }}>
-                    <Typography variant="body2">
-                      <strong>Note:</strong> Minimum 15 marks required for selection.
-                    </Typography>
-                  </Alert>
-                </Card>
-              )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
-              {/* Student Info Card */}
-              <Card variant="outlined" sx={{ mb: 2 }}>
-                <CardContent sx={{ p: 2 }}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <PersonIcon fontSize="small" color="action" />
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            Candidate Name
-                          </Typography>
-                          <Typography variant="body1" fontWeight={500}>
-                            {result.result.student?.name || result.student?.name || "N/A"}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={6}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <AssignmentIcon fontSize="small" color="action" />
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            Registration Code
-                          </Typography>
-                          <Typography variant="body1" fontWeight={500} fontFamily="monospace">
-                            {result.result.registrationCode}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
-              
+      {/* Single Result */}
+      {result && (
+        <Card sx={{ borderRadius: 2, mb: 2 }}>
+          <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+              Result Details
+            </Typography>
 
-              {/* Marks and Rank Card */}
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6}>
-                  <Card variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Rank
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-                      {getMedalIcon(result.result.rank)}
-                      <Typography variant="h4" fontWeight={600}>
-                        {result.result.rank || "N/A"}
-                      </Typography>
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Overall Position
-                    </Typography>
-                  </Card>
-                </Grid>
-                
-                <Grid item xs={12} sm={6}>
-                  <Card variant="outlined" sx={{ p: 2, textAlign: 'center' }}>
-                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                      Scholarship
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-                      <EmojiEventsIcon color={getScholarshipColor(getScholarshipValue(result.result))} />
-                      <Typography variant="h6" fontWeight={600}>
-                        {getScholarshipValue(result.result) || "Not Eligible"}
-                      </Typography>
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {getScholarshipText(getScholarshipValue(result.result))}
-                    </Typography>
-                  </Card>
-                </Grid>
-              </Grid>
-
-              
-
-              {/* Additional Information */}
-              <Card variant="outlined" sx={{ mb: 3 }}>
-                <CardContent sx={{ p: 2 }}>
-                  <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                    Additional Information
-                  </Typography>
-                  
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <SchoolIcon fontSize="small" color="action" />
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            School
-                          </Typography>
-                          <Typography variant="body2">
-                            {result.student?.schoolName || "N/A"}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={6}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <ClassIcon fontSize="small" color="action" />
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            Class
-                          </Typography>
-                          <Typography variant="body2">
-                            Class {result.student?.studyingClass || "7"}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={6}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <TrainingIcon fontSize="small" color="action" />
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            IAS Coaching Eligibility
-                          </Typography>
-                          <Chip
-                            label={isIASEligible(result.result) ? "ELIGIBLE" : "NOT ELIGIBLE"}
-                            color={isIASEligible(result.result) ? "success" : "default"}
-                            size="small"
-                          />
-                          <Typography variant="caption" display="block" color="text.secondary">
-                            {isIASEligible(result.result) 
-                              ? "Top 100 rank with 15+ marks" 
-                              : ""}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Grid>
-                    
-                    <Grid item xs={12} sm={6}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                        <HomeWorkIcon fontSize="small" color="action" />
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            Selection Status
-                          </Typography>
-                          <Chip
-                            label={isStudentSelected(result.result) ? "SELECTED" : "NOT SELECTED"}
-                            color={isStudentSelected(result.result) ? "success" : "default"}
-                            size="small"
-                          />
-                          <Typography variant="caption" display="block" color="text.secondary">
-                            {isStudentSelected(result.result) 
-                              ? "Eligible for Butterfly Workshop" 
-                              : "Requires 15+ marks"}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Grid>
-                  </Grid>
-                </CardContent>
-              </Card>
-
-              {/* Note */}
-              <Alert severity="info">
+            {/* Selection Status - UPDATED MESSAGES */}
+            {isStudentSelected(result.result) ? (
+              <Alert severity="success" sx={{ mb: 2 }}>
+                <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
+                  Congratulations!
+                </Typography>
                 <Typography variant="body2">
-                  <strong>Note:</strong> 
-                  <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
-                    <li>Minimum 15 marks required for Butterfly Workshop selection</li>
-                    <li>Top 3 students receive Gold/Silver/Bronze scholarships</li>
-                    <li>Top 100 students with 15+ marks are eligible for IAS coaching</li>
-                  </ul>
+                  You have been selected for the one-day{" "}
+                  <strong>Butterfly Workshop 2026.</strong>
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1, fontStyle: "italic" }}>
+                  Further details will be shared through the WhatsApp group.
                 </Typography>
               </Alert>
-            </Box>
-          )}
+            ) : (
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 600 , color: "red"}}>
+                  Sorry!
+                </Typography>
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  You have not been selected.
+                </Typography>
+              </Alert>
+            )}
 
-          {/* Multiple Results Display */}
-          {multipleResults.length > 0 && (
-            <Box>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 2 }}>
-                Multiple Registrations Found
-              </Typography>
-              
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                {multipleResults.length} registration(s) found for this phone number
-              </Typography>
+            {/* Student Info */}
+            <Grid container spacing={2} sx={{ mb: 2 }}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="caption" color="text.secondary">
+                  Candidate Name
+                </Typography>
+                <Typography variant="body1" fontWeight={500}>
+                  {result.result.student?.name || result.student?.name || "N/A"}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="caption" color="text.secondary">
+                  Registration Code
+                </Typography>
+                <Typography
+                  variant="body1"
+                  fontWeight={500}
+                  fontFamily="monospace"
+                >
+                  {result.result.registrationCode}
+                </Typography>
+              </Grid>
+            </Grid>
+            {/* Additional Info */}
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="caption" color="text.secondary">
+                  School
+                </Typography>
+                <Typography variant="body2">
+                  {result.student?.schoolName || "N/A"}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="caption" color="text.secondary">
+                  Class
+                </Typography>
+                <Typography variant="body2">
+                  Class {result.student?.studyingClass || "7"}
+                </Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  gutterBottom
+                >
+                  Selection Status
+                </Typography>
+                <Chip
+                  label={
+                    isStudentSelected(result.result)
+                      ? "SELECTED"
+                      : "NOT SELECTED"
+                  }
+                  color={
+                    isStudentSelected(result.result) ? "success" : "default"
+                  }
+                  size="small"
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
 
+      {/* Multiple Results */}
+      {multipleResults.length > 0 && (
+        <Card sx={{ borderRadius: 2 }}>
+          <CardContent sx={{ p: isMobile ? 2 : 3 }}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+              Multiple Registrations Found
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              {multipleResults.length} registration(s) found
+            </Typography>
+
+            {isMobile ? (
+              // Mobile Card View
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {multipleResults.map((result, index) => (
+                  <Card key={index} variant="outlined">
+                    <CardContent sx={{ p: 1.5 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          mb: 1,
+                        }}
+                      >
+                        <Avatar sx={{ width: 40, height: 40 }}>
+                          {result.name?.charAt(0) || "?"}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle2" fontWeight={600}>
+                            {result.name || "N/A"}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Class {result.class || "7"}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      <Grid container spacing={1}>
+                        <Grid item xs={6}>
+                          <Typography variant="caption" color="text.secondary">
+                            Reg. Code
+                          </Typography>
+                          <Typography variant="body2" fontFamily="monospace">
+                            {result.registrationCode || "N/A"}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={3}>
+                          <Typography variant="caption" color="text.secondary">
+                            Marks
+                          </Typography>
+                          <Typography variant="body2" fontWeight={600}>
+                            {result.marks || 0}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={3}>
+                          <Typography variant="caption" color="text.secondary">
+                            Rank
+                          </Typography>
+                          <Typography variant="body2">
+                            {result.rank || "N/A"}
+                          </Typography>
+                        </Grid>
+                      </Grid>
+
+                      <Divider sx={{ my: 1 }} />
+
+                      <Grid container spacing={1}>
+                        <Grid item xs={4}>
+                          <Chip
+                            label={
+                              hasScholarship(result)
+                                ? getNormalizedScholarship(result)
+                                : "No"
+                            }
+                            size="small"
+                            color={
+                              hasScholarship(result)
+                                ? getScholarshipColor(
+                                    getNormalizedScholarship(result),
+                                  )
+                                : "default"
+                            }
+                            variant={
+                              hasScholarship(result) ? "filled" : "outlined"
+                            }
+                            sx={{ width: "100%" }}
+                          />
+                        </Grid>
+                        <Grid item xs={4}>
+                          <Chip
+                            label={result.isSelected ? "SELECTED" : "NOT"}
+                            color={result.isSelected ? "success" : "default"}
+                            size="small"
+                            sx={{ width: "100%" }}
+                          />
+                        </Grid>
+                        <Grid item xs={4}>
+                          <Chip
+                            label={isIASEligible(result) ? "IAS" : "No"}
+                            color={
+                              isIASEligible(result) ? "success" : "default"
+                            }
+                            size="small"
+                            variant={
+                              isIASEligible(result) ? "filled" : "outlined"
+                            }
+                            sx={{ width: "100%" }}
+                          />
+                        </Grid>
+                      </Grid>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Box>
+            ) : (
+              // Desktop Table View
               <TableContainer component={Paper} variant="outlined">
                 <Table size="small">
                   <TableHead>
-                    <TableRow sx={{ bgcolor: 'action.hover' }}>
-                      <TableCell><strong>Student</strong></TableCell>
-                      <TableCell><strong>Code</strong></TableCell>
-                      <TableCell align="center"><strong>Marks</strong></TableCell>
-                      <TableCell align="center"><strong>Rank</strong></TableCell>
-                      <TableCell align="center"><strong>Scholarship</strong></TableCell>
-                      <TableCell align="center"><strong>Selection</strong></TableCell>
-                      <TableCell align="center"><strong>IAS</strong></TableCell>
-                      {/* <TableCell align="center"><strong>Action</strong></TableCell> */}
+                    <TableRow>
+                      <TableCell>
+                        <strong>Student</strong>
+                      </TableCell>
+                      <TableCell>
+                        <strong>Code</strong>
+                      </TableCell>
+                      <TableCell align="center">
+                        <strong>Marks</strong>
+                      </TableCell>
+                      <TableCell align="center">
+                        <strong>Rank</strong>
+                      </TableCell>
+                      <TableCell align="center">
+                        <strong>Scholarship</strong>
+                      </TableCell>
+                      <TableCell align="center">
+                        <strong>Selection</strong>
+                      </TableCell>
+                      <TableCell align="center">
+                        <strong>IAS</strong>
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {multipleResults.map((result, index) => (
                       <TableRow key={index}>
                         <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.875rem' }}>
-                              {result.name.charAt(0)}
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <Avatar sx={{ width: 32, height: 32 }}>
+                              {result.name?.charAt(0) || "?"}
                             </Avatar>
                             <Box>
                               <Typography variant="body2" fontWeight={500}>
-                                {result.name}
+                                {result.name || "N/A"}
                               </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                Class {result.class}
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                Class {result.class || "7"}
                               </Typography>
                             </Box>
                           </Box>
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2" fontFamily="monospace">
-                            {result.registrationCode}
+                            {result.registrationCode || "N/A"}
                           </Typography>
                         </TableCell>
                         <TableCell align="center">
                           <Typography variant="body2" fontWeight={500}>
-                            {result.marks || 0}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            /{result.totalMarks || 50}
+                            {result.marks || 0}/{result.totalMarks || 50}
                           </Typography>
                         </TableCell>
                         <TableCell align="center">
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: 0.5,
+                            }}
+                          >
                             {getMedalIcon(result.rank)}
                             <Typography variant="body2">
-                              {result.rank}
+                              {result.rank || "N/A"}
                             </Typography>
                           </Box>
                         </TableCell>
                         <TableCell align="center">
-                          {result.scholarship || result.scholarshipType ? (
+                          {hasScholarship(result) ? (
                             <Chip
-                              label={result.scholarship || result.scholarshipType}
-                              color={getScholarshipColor(result.scholarship || result.scholarshipType)}
+                              label={getNormalizedScholarship(result)}
+                              color={getScholarshipColor(
+                                getNormalizedScholarship(result),
+                              )}
                               size="small"
                             />
                           ) : (
-                            <Typography variant="caption" color="text.secondary">
-                              Not Eligible
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              -
                             </Typography>
                           )}
                         </TableCell>
                         <TableCell align="center">
                           <Chip
-                            label={result.isSelected ? "SELECTED" : "NOT SELECTED"}
+                            label={result.isSelected ? "YES" : "NO"}
                             color={result.isSelected ? "success" : "default"}
                             size="small"
                           />
                         </TableCell>
                         <TableCell align="center">
                           <Chip
-                            label={result.iasCoaching ? "ELIGIBLE" : "NOT ELIGIBLE"}
-                            color={result.iasCoaching ? "success" : "default"}
+                            label={isIASEligible(result) ? "YES" : "NO"}
+                            color={
+                              isIASEligible(result) ? "success" : "default"
+                            }
                             size="small"
                           />
                         </TableCell>
-                        {/* <TableCell align="center">
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<DownloadIcon />}
-                            onClick={() => {
-                              setSearchType("code");
-                              setRegistrationCode(result.registrationCode);
-                              setTimeout(() => handleSearch(), 100);
-                            }}
-                          >
-                            View
-                          </Button>
-                        </TableCell> */}
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </TableContainer>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Contact Information */}
-      <Card sx={{ borderRadius: 2, border: 1, borderColor: 'divider' }}>
-        <CardContent sx={{ p: 2 }}>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={4}>
-              <Box sx={{ textAlign: 'center' }}>
-                <AccountBalanceIcon sx={{ fontSize: 24, mb: 1, color: 'text.secondary' }} />
-                <Typography variant="body2" fontWeight={500} gutterBottom>
-                  PPMHSS Kottukkara
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Kottukkara, Kondotty
-                </Typography>
-              </Box>
-            </Grid>
-            
-            <Grid item xs={12} sm={4}>
-              <Box sx={{ textAlign: 'center' }}>
-                <PhoneIcon sx={{ fontSize: 24, mb: 1, color: 'text.secondary' }} />
-                <Typography variant="body2" fontWeight={500} gutterBottom>
-                  Contact
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  +91 9947073499, +91 8547645640
-                </Typography>
-              </Box>
-            </Grid>
-            
-            <Grid item xs={12} sm={4}>
-              <Box sx={{ textAlign: 'center' }}>
-                <EmailIcon sx={{ fontSize: 24, mb: 1, color: 'text.secondary' }} />
-                <Typography variant="body2" fontWeight={500} gutterBottom>
-                  Email
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  ppmhss@gmail.com
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
-          
-          <Divider sx={{ my: 2 }} />
-          
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
+      {/* Footer */}
+      <Card sx={{ mt: isMobile ? 2 : 3, borderRadius: 2 }}>
+        <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+          <Box sx={{ textAlign: "center" }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+            >
               Developed by <strong>Muhammed Salih KM</strong> | 81570 24638
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mt: 0.5 }}
+            >
               © {new Date().getFullYear()} PPMHSS Kottukkara
             </Typography>
           </Box>
