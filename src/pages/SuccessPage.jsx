@@ -33,7 +33,7 @@ import {
   Error as ErrorIcon,
 } from "@mui/icons-material";
 import toast from "react-hot-toast";
-import axios from "axios";
+import axiosInstance from "../api/axiosInstance";
 
 const SuccessPage = () => {
   const navigate = useNavigate();
@@ -85,8 +85,8 @@ const SuccessPage = () => {
   const fetchStudentDetails = async (registrationCode) => {
     try {
       setLoadingDetails(true);
-      const response = await axios.get(
-        `https://apinmea.oxiumev.com/api/students/${registrationCode}`,
+      const response = await axiosInstance.get(
+        `/students/${registrationCode}`,
       );
 
       if (response.data.success) {

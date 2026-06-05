@@ -41,7 +41,7 @@ import {
   FilterList as FilterIcon,
   MenuBook as MenuBookIcon, // New icon for register range
 } from "@mui/icons-material";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import toast from "react-hot-toast";
 
 const RoomManagement = ({ stats }) => {
@@ -61,12 +61,8 @@ const RoomManagement = ({ stats }) => {
   const fetchRooms = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('adminToken');
-      const response = await axios.get(
-        `https://apinmea.oxiumev.com/api/admin/rooms/stats`,
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.get(
+        `/admin/rooms/stats`
       );
       
       if (response.data.success) {
@@ -109,11 +105,9 @@ const RoomManagement = ({ stats }) => {
   const fetchRoomStudents = useCallback(async (roomNo) => {
     setDialogLoading(true);
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await axios.get(
-        `https://apinmea.oxiumev.com/api/students/rooms/${roomNo}`,
+      const response = await axiosInstance.get(
+        `/students/rooms/${roomNo}`,
         {
-          headers: { "x-auth-token": token },
           params: { excludeDeleted: true } // Add this parameter
         }
       );
@@ -147,20 +141,23 @@ const RoomManagement = ({ stats }) => {
 
   const handleDownloadAttendanceSheet = (roomNo) => {
     const token = localStorage.getItem('adminToken');
-    const url = `https://apinmea.oxiumev.com/api/admin/room-attendance/${roomNo}/pdf?preview=false&print=true&token=${token}`;
+    const apiBase = import.meta.env.VITE_API_URL || 'https://apinmea.oxiumev.com/api';
+    const url = `${apiBase}/admin/room-attendance/${roomNo}/pdf?preview=false&print=true&token=${token}`;
     downloadPDF(url);
   };
 
   const handleDownloadExamSlips = (roomNo) => {
     const token = localStorage.getItem('adminToken');
-    const url = `https://apinmea.oxiumev.com/api/admin/simple-exam-slips/${roomNo}?preview=false&print=true&token=${token}`;
+    const apiBase = import.meta.env.VITE_API_URL || 'https://apinmea.oxiumev.com/api';
+    const url = `${apiBase}/admin/simple-exam-slips/${roomNo}?preview=false&print=true&token=${token}`;
     downloadPDF(url);
   };
 
   // NEW FUNCTION: Download Room Register Range PDF (all rooms)
   const handleDownloadRegisterRange = () => {
     const token = localStorage.getItem('adminToken');
-    const url = `https://apinmea.oxiumev.com/api/rooms/register-range/pdf?preview=false&print=true&token=${token}`;
+    const apiBase = import.meta.env.VITE_API_URL || 'https://apinmea.oxiumev.com/api';
+    const url = `${apiBase}/rooms/register-range/pdf?preview=false&print=true&token=${token}`;
     downloadPDF(url);
     toast.success("Generating room register range PDF...");
   };
@@ -548,7 +545,10 @@ const RoomManagement = ({ stats }) => {
                       <Tooltip title="Download Hall Ticket">
                         <IconButton
                           size="small"
-                          onClick={() => window.open(`https://apinmea.oxiumev.com/api/students/${student.registrationCode}/hallticket/download`, '_blank')}
+                          onClick={() => {
+                            const apiBase = import.meta.env.VITE_API_URL || 'https://apinmea.oxiumev.com/api';
+                            window.open(`${apiBase}/students/${student.registrationCode}/hallticket/download`, '_blank');
+                          }}
                         >
                           <DownloadIcon fontSize="small" />
                         </IconButton>

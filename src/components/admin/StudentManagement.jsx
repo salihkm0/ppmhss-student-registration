@@ -55,7 +55,7 @@ import {
   ContentCopy as CopyIcon,
   Edit as EditIcon,
 } from "@mui/icons-material";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 
@@ -100,10 +100,9 @@ const StudentManagement = () => {
         ...(showDeleted && { showDeleted: true }),
       };
 
-      const response = await axios.get(
-        "https://apinmea.oxiumev.com/api/admin/students",
+      const response = await axiosInstance.get(
+        "/admin/students",
         {
-          headers: { "x-auth-token": token },
           params,
         },
       );
@@ -122,12 +121,8 @@ const StudentManagement = () => {
 
   const fetchRoomDistribution = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.get(
-        "https://apinmea.oxiumev.com/api/admin/students/room-distribution",
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.get(
+        "/admin/students/room-distribution"
       );
 
       if (response.data.success) {
@@ -143,12 +138,8 @@ const StudentManagement = () => {
 
   const fetchDeletedStudents = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.get(
-        "https://apinmea.oxiumev.com/api/admin/students/deleted",
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.get(
+        "/admin/students/deleted"
       );
 
       if (response.data.success) {
@@ -168,11 +159,9 @@ const StudentManagement = () => {
 
   const confirmSoftDelete = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.delete(
-        `https://apinmea.oxiumev.com/api/admin/students/soft-delete/${studentToDelete.id}`,
+      const response = await axiosInstance.delete(
+        `/admin/students/soft-delete/${studentToDelete.id}`,
         {
-          headers: { "x-auth-token": token },
           data: { reason: deleteReason },
         },
       );
@@ -201,13 +190,9 @@ const StudentManagement = () => {
     }
 
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.post(
-        `https://apinmea.oxiumev.com/api/admin/students/restore/${studentId}`,
-        {},
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.post(
+        `/admin/students/restore/${studentId}`,
+        {}
       );
 
       if (response.data.success) {
@@ -231,12 +216,8 @@ const StudentManagement = () => {
     }
 
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.delete(
-        `https://apinmea.oxiumev.com/api/admin/students/hard-delete/${studentId}`,
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.delete(
+        `/admin/students/hard-delete/${studentId}`
       );
 
       if (response.data.success) {
@@ -251,12 +232,9 @@ const StudentManagement = () => {
 
   const handleExport = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const params = showDeleted ? { showDeleted: true } : {};
-      const response = await axios.get(
-        "https://apinmea.oxiumev.com/api/admin/export",
+      const response = await axiosInstance.get(
+        "/admin/export",
         {
-          headers: { "x-auth-token": token },
           params,
           responseType: "blob",
         },
@@ -501,12 +479,9 @@ const StudentManagement = () => {
 
       console.log("Sending update data:", JSON.stringify(updateData, null, 2)); // For debugging
 
-      const response = await axios.put(
-        `https://apinmea.oxiumev.com/api/admin/students/${selectedStudent._id}`,
-        updateData,
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.put(
+        `/admin/students/${selectedStudent._id}`,
+        updateData
       );
 
       if (response.data.success) {
@@ -524,8 +499,9 @@ const StudentManagement = () => {
   };
 
   const handleDownloadHallTicket = (registrationCode) => {
+    const apiBase = import.meta.env.VITE_API_URL || 'https://apinmea.oxiumev.com/api';
     window.open(
-      `https://apinmea.oxiumev.com/api/students/${registrationCode}/hallticket/download`,
+      `${apiBase}/students/${registrationCode}/hallticket/download`,
       "_blank",
     );
   };

@@ -89,7 +89,7 @@ import {
   Male as MaleIcon,
   Female as FemaleIcon,
 } from "@mui/icons-material";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -205,40 +205,8 @@ const InvigilatorManagement = () => {
     return token;
   };
 
-  // Create axios instance with auth header
-  const apiClient = axios.create({
-    baseURL: API_URL,
-  });
-
-  // Add request interceptor to add token
-  apiClient.interceptors.request.use(
-    (config) => {
-      const token = getToken();
-      if (token) {
-        config.headers['x-auth-token'] = token;
-        config.headers['Authorization'] = `Bearer ${token}`;
-      }
-      return config;
-    },
-    (error) => {
-      return Promise.reject(error);
-    }
-  );
-
-  // Add response interceptor for auth errors
-  apiClient.interceptors.response.use(
-    (response) => response,
-    (error) => {
-      if (error.response?.status === 401 || error.response?.data?.error === 'No token, authorization denied') {
-        setAuthError(true);
-        toast.error('Session expired. Please login again.');
-        localStorage.removeItem('adminToken');
-        localStorage.removeItem('token');
-        navigate('/admin/login');
-      }
-      return Promise.reject(error);
-    }
-  );
+  // Use the global axiosInstance
+  const apiClient = axiosInstance;
 
   useEffect(() => {
     const token = getToken();

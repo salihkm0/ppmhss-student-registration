@@ -49,7 +49,7 @@ import {
   PersonOff as AbsentIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import toast from "react-hot-toast";
 
 const EnterMarks = ({ dashboardData, onDataUpdate }) => {
@@ -155,13 +155,9 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
     setAbsentDialogOpen(false);
     
     try {
-      const token = localStorage.getItem('invigilatorToken');
-      const response = await axios.post(
-        `https://apinmea.oxiumev.com/api/invigilator/students/${studentId}/marks`,
-        { marks: mark },
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.post(
+        `/invigilator/students/${studentId}/marks`,
+        { marks: mark }
       );
 
       if (response.data.success) {
@@ -246,13 +242,9 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
 
     setSavingStudentId(studentId);
     try {
-      const token = localStorage.getItem('invigilatorToken');
-      const response = await axios.post(
-        `https://apinmea.oxiumev.com/api/invigilator/students/${studentId}/marks`,
-        { marks: mark },
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.post(
+        `/invigilator/students/${studentId}/marks`,
+        { marks: mark }
       );
 
       if (response.data.success) {
@@ -332,13 +324,9 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
 
     setSubmitting(true);
     try {
-      const token = localStorage.getItem('invigilatorToken');
-      const response = await axios.post(
-        `https://apinmea.oxiumev.com/api/invigilator/students/${studentId}/submit`,
-        {},
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.post(
+        `/invigilator/students/${studentId}/submit`,
+        {}
       );
 
       if (response.data.success) {
@@ -405,13 +393,9 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
 
     setSubmitting(true);
     try {
-      const token = localStorage.getItem('invigilatorToken');
-      const response = await axios.post(
-        `https://apinmea.oxiumev.com/api/invigilator/rooms/${selectedRoom}/submit-all`,
-        {},
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.post(
+        `/invigilator/rooms/${selectedRoom}/submit-all`,
+        {}
       );
 
       if (response.data.success) {
@@ -455,17 +439,12 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('invigilatorToken');
-      
       // Save marks in parallel
       const savePromises = marksToSave.map(async ({ studentId, marks: markValue }) => {
         try {
-          const response = await axios.post(
-            `https://apinmea.oxiumev.com/api/invigilator/students/${studentId}/marks`,
-            { marks: markValue },
-            {
-              headers: { "x-auth-token": token },
-            }
+          const response = await axiosInstance.post(
+            `/invigilator/students/${studentId}/marks`,
+            { marks: markValue }
           );
           return { studentId, success: true, data: response.data };
         } catch (error) {
@@ -521,13 +500,9 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
 
     setSaving(true);
     try {
-      const token = localStorage.getItem('invigilatorToken');
-      const response = await axios.post(
-        `https://apinmea.oxiumev.com/api/invigilator/rooms/${selectedRoom}/bulk-marks`,
-        { marksData },
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.post(
+        `/invigilator/rooms/${selectedRoom}/bulk-marks`,
+        { marksData }
       );
 
       if (response.data.success) {
@@ -549,12 +524,8 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
   // Refresh room data
   const refreshRoomData = async () => {
     try {
-      const token = localStorage.getItem('invigilatorToken');
-      const dashboardResponse = await axios.get(
-        "https://apinmea.oxiumev.com/api/invigilator/dashboard",
-        {
-          headers: { "x-auth-token": token },
-        }
+      const dashboardResponse = await axiosInstance.get(
+        "/invigilator/dashboard"
       );
 
       if (dashboardResponse.data.success) {

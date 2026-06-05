@@ -51,7 +51,7 @@ import {
   SentimentVeryDissatisfied as SadIcon,
   Celebration as CelebrationIcon,
 } from "@mui/icons-material";
-import axios from "axios";
+import axiosInstance from "../api/axiosInstance";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
@@ -87,8 +87,8 @@ const ResultLookup = () => {
 
     try {
       if (searchType === "code") {
-        const response = await axios.get(
-          `https://apinmea.oxiumev.com/api/results/code/${registrationCode.trim().toUpperCase()}`,
+        const response = await axiosInstance.get(
+          `/results/code/${registrationCode.trim().toUpperCase()}`,
         );
 
         if (response.data.success) {
@@ -96,8 +96,8 @@ const ResultLookup = () => {
           toast.success("Result found!");
         }
       } else {
-        const response = await axios.get(
-          `https://apinmea.oxiumev.com/api/results/phone/${phoneNo.trim()}`,
+        const response = await axiosInstance.get(
+          `/results/phone/${phoneNo.trim()}`,
         );
 
         if (response.data.success) {

@@ -26,7 +26,7 @@ import {
   Phone as PhoneIcon,
   Home as HomeIcon,
 } from "@mui/icons-material";
-import axios from "axios";
+import axiosInstance from "../api/axiosInstance";
 import toast from "react-hot-toast";
 
 const HallTicketPage = () => {
@@ -43,8 +43,8 @@ const HallTicketPage = () => {
   const fetchStudentDetails = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(
-        `https://apinmea.oxiumev.com/api/students/${code}`
+      const response = await axiosInstance.get(
+        `/students/${code}`
       );
 
       if (response.data.success) {

@@ -374,7 +374,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import toast from "react-hot-toast";
 import {
   Dashboard as DashboardIcon,
@@ -422,11 +422,8 @@ const InvigilatorDashboard = () => {
         setInvigilatorData(invigilator);
         
         // Fetch dashboard data
-        const response = await axios.get(
-          "https://apinmea.oxiumev.com/api/invigilator/dashboard",
-          {
-            headers: { "x-auth-token": token },
-          }
+        const response = await axiosInstance.get(
+          "/invigilator/dashboard"
         );
         
         if (response.data.success) {
@@ -766,9 +763,8 @@ const InvigilatorDashboard = () => {
                 const fetchUpdatedData = async () => {
                   try {
                     const token = localStorage.getItem('invigilatorToken');
-                    const response = await axios.get(
-                      "https://apinmea.oxiumev.com/api/invigilator/dashboard",
-                      { headers: { "x-auth-token": token } }
+                    const response = await axiosInstance.get(
+                      "/invigilator/dashboard"
                     );
                     if (response.data.success) {
                       setDashboardData(response.data.dashboard);

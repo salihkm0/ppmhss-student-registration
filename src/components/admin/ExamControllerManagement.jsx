@@ -57,7 +57,7 @@ import {
   Refresh as RefreshIcon,
   Search as SearchIcon,
 } from "@mui/icons-material";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import toast from "react-hot-toast";
 
 const ExamControllerManagement = () => {
@@ -93,12 +93,8 @@ const ExamControllerManagement = () => {
   const fetchInvigilators = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('adminToken');
-      const response = await axios.get(
-        "https://apinmea.oxiumev.com/api/admin/invigilators",
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.get(
+        "/admin/invigilators"
       );
 
       if (response.data.success) {
@@ -115,12 +111,8 @@ const ExamControllerManagement = () => {
   const fetchAvailableRooms = async () => {
     try {
       setRoomsLoading(true);
-      const token = localStorage.getItem('adminToken');
-      const response = await axios.get(
-        "https://apinmea.oxiumev.com/api/admin/rooms/available",
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.get(
+        "/admin/rooms/available"
       );
 
       if (response.data.success) {
@@ -140,13 +132,9 @@ const ExamControllerManagement = () => {
     }
 
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await axios.post(
-        "https://apinmea.oxiumev.com/api/admin/invigilators",
-        formData,
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.post(
+        "/admin/invigilators",
+        formData
       );
 
       if (response.data.success) {
@@ -164,13 +152,9 @@ const ExamControllerManagement = () => {
 
   const handleUpdateInvigilator = async () => {
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await axios.put(
-        `https://apinmea.oxiumev.com/api/admin/invigilators/${selectedInvigilator._id}`,
-        formData,
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.put(
+        `/admin/invigilators/${selectedInvigilator._id}`,
+        formData
       );
 
       if (response.data.success) {
@@ -191,12 +175,8 @@ const ExamControllerManagement = () => {
     }
 
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await axios.delete(
-        `https://apinmea.oxiumev.com/api/admin/invigilators/${invigilatorId}`,
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.delete(
+        `/admin/invigilators/${invigilatorId}`
       );
 
       if (response.data.success) {
@@ -217,13 +197,9 @@ const ExamControllerManagement = () => {
     }
 
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await axios.post(
-        `https://apinmea.oxiumev.com/api/admin/invigilators/${selectedInvigilator._id}/assign-rooms`,
-        assignData,
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.post(
+        `/admin/invigilators/${selectedInvigilator._id}/assign-rooms`,
+        assignData
       );
 
       if (response.data.success) {
@@ -245,13 +221,9 @@ const ExamControllerManagement = () => {
     }
 
     try {
-      const token = localStorage.getItem('adminToken');
-      const response = await axios.post(
-        `https://apinmea.oxiumev.com/api/admin/invigilators/${invigilatorId}/remove-room`,
-        { roomNo },
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.post(
+        `/admin/invigilators/${invigilatorId}/remove-room`,
+        { roomNo }
       );
 
       if (response.data.success) {

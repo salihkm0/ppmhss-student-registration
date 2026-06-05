@@ -27,7 +27,7 @@ import {
   AccountBalance as AccountBalanceIcon,
   Email as EmailIcon,
 } from "@mui/icons-material";
-import axios from "axios";
+import axiosInstance from "../api/axiosInstance";
 import toast from "react-hot-toast";
 
 const StudentLookup = () => {
@@ -47,8 +47,8 @@ const StudentLookup = () => {
     setStudent(null);
 
     try {
-      const response = await axios.get(
-        `https://apinmea.oxiumev.com/api/students/${registrationCode.trim().toUpperCase()}`,
+      const response = await axiosInstance.get(
+        `/students/${registrationCode.trim().toUpperCase()}`,
       );
 
       if (response.data.success) {

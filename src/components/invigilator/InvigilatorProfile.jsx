@@ -22,7 +22,7 @@ import {
   Room as RoomIcon,
   AssignmentInd as InvigilatorIcon,
 } from "@mui/icons-material";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import toast from "react-hot-toast";
 
 // const InvigilatorProfile = ({ invigilatorData }) => {

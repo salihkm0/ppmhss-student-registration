@@ -57,7 +57,7 @@ import {
   Celebration as CelebrationIcon,
   SentimentVeryDissatisfied as SadIcon,
 } from "@mui/icons-material";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import toast from "react-hot-toast";
 
 const ResultsManagement = () => {
@@ -107,12 +107,8 @@ const ResultsManagement = () => {
 
   const fetchTopPerformers = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.get(
-        "https://apinmea.oxiumev.com/api/admin/results/top-performers",
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.get(
+        "/admin/results/top-performers"
       );
 
       if (response.data.success) {
@@ -128,12 +124,8 @@ const ResultsManagement = () => {
 
   const fetchResultStats = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.get(
-        "https://apinmea.oxiumev.com/api/results/top",
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.get(
+        "/results/top"
       );
 
       if (response.data.success) {
@@ -155,12 +147,8 @@ const ResultsManagement = () => {
 
   const fetchRooms = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.get(
-        "https://apinmea.oxiumev.com/api/admin/rooms/available",
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.get(
+        "/admin/rooms/available"
       );
 
       if (response.data.success) {
@@ -175,16 +163,8 @@ const ResultsManagement = () => {
   const fetchStudentsByStatus = async () => {
     setLoadingStatus(true);
     try {
-      const token = localStorage.getItem("adminToken");
-      const params = new URLSearchParams();
-      if (statusFilter) params.append("status", statusFilter);
-      if (roomFilter) params.append("roomNo", roomFilter);
-
-      const response = await axios.get(
-        `https://apinmea.oxiumev.com/api/admin/marks/students?${params.toString()}`,
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.get(
+        `/admin/marks/students?${params.toString()}`
       );
 
       if (response.data.success) {
@@ -200,12 +180,8 @@ const ResultsManagement = () => {
 
   const fetchRoomSummary = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.get(
-        "https://apinmea.oxiumev.com/api/admin/marks/room-summary",
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.get(
+        "/admin/marks/room-summary"
       );
 
       if (response.data.success) {
@@ -219,12 +195,8 @@ const ResultsManagement = () => {
   const fetchStudentHistory = async (studentId) => {
     setHistoryLoading(true);
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.get(
-        `https://apinmea.oxiumev.com/api/admin/marks/students/${studentId}/history`,
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.get(
+        `/admin/marks/students/${studentId}/history`
       );
 
       if (response.data.success) {
@@ -256,13 +228,9 @@ const ResultsManagement = () => {
 
     setSavingMarks(true);
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.put(
-        `https://apinmea.oxiumev.com/api/admin/marks/students/${selectedStudent._id}`,
-        { marks },
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.put(
+        `/admin/marks/students/${selectedStudent._id}`,
+        { marks }
       );
 
       if (response.data.success) {
@@ -282,13 +250,9 @@ const ResultsManagement = () => {
   const handleFinalizeMarks = async (studentId) => {
     setFinalizingId(studentId);
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.post(
-        `https://apinmea.oxiumev.com/api/admin/marks/students/${studentId}/finalize`,
-        {},
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.post(
+        `/admin/marks/students/${studentId}/finalize`,
+        {}
       );
 
       if (response.data.success) {
@@ -306,12 +270,8 @@ const ResultsManagement = () => {
   const handleGenerateRanks = async () => {
     // First check if there are any draft marks
     try {
-      const token = localStorage.getItem("adminToken");
-      const draftCheck = await axios.get(
-        "https://apinmea.oxiumev.com/api/admin/marks/students?status=draft",
-        {
-          headers: { "x-auth-token": token },
-        },
+      const draftCheck = await axiosInstance.get(
+        "/admin/marks/students?status=draft"
       );
 
       if (
@@ -337,13 +297,9 @@ const ResultsManagement = () => {
 
     setGeneratingRanks(true);
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.post(
-        "https://apinmea.oxiumev.com/api/admin/results/update-ranks",
-        {},
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.post(
+        "/admin/results/update-ranks",
+        {}
       );
 
       if (response.data.success) {

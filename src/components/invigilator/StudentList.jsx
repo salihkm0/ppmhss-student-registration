@@ -33,7 +33,7 @@ import {
   Phone as PhoneIcon,
 } from "@mui/icons-material";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import toast from "react-hot-toast";
 
 const StudentList = ({ dashboardData }) => {
@@ -58,12 +58,7 @@ const StudentList = ({ dashboardData }) => {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('invigilatorToken');
-      let url = "https://apinmea.oxiumev.com/api/invigilator/dashboard";
-
-      const response = await axios.get(url, {
-        headers: { "x-auth-token": token },
-      });
+      const response = await axiosInstance.get("/invigilator/dashboard");
 
       if (response.data.success) {
         const allStudents = response.data.dashboard.assignedRooms.flatMap(room => 

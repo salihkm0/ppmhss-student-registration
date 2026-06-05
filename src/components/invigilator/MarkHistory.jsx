@@ -36,7 +36,7 @@ import {
   Schedule as ScheduleIcon,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import toast from "react-hot-toast";
 
 const MarkHistory = () => {
@@ -52,12 +52,8 @@ const MarkHistory = () => {
 
 const fetchHistory = async () => {
   try {
-    const token = localStorage.getItem('invigilatorToken');
-    const response = await axios.get(
-      `https://apinmea.oxiumev.com/api/invigilator/students/${studentId}/history`,
-      {
-        headers: { "x-auth-token": token },
-      }
+    const response = await axiosInstance.get(
+      `/invigilator/students/${studentId}/history`
     );
 
     console.log("API Response:", JSON.stringify(response.data));

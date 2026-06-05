@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import toast from "react-hot-toast";
 import {
   Dashboard as DashboardIcon,
@@ -46,12 +46,8 @@ const AdminDashboard = () => {
         setAdminData(admin);
         
         // Fetch dashboard stats
-        const response = await axios.get(
-          "https://apinmea.oxiumev.com/api/admin/dashboard/stats",
-          {
-            headers: { "x-auth-token": token },
-          }
-          
+        const response = await axiosInstance.get(
+          "/admin/dashboard/stats"
         );
         
         if (response.data.success) {
