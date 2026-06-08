@@ -1228,45 +1228,6 @@ const StudentManagement = () => {
                                   : "Not Ranked"}
                               </Typography>
                             </Grid>
-                            <Grid item xs={12} md={4}>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                Scholarship
-                              </Typography>
-                              <Chip
-                                label={
-                                  selectedStudent.scholarship ||
-                                  "No Scholarship"
-                                }
-                                color={
-                                  selectedStudent.scholarship
-                                    ? "success"
-                                    : "default"
-                                }
-                                size="small"
-                              />
-                            </Grid>
-                            <Grid item xs={12} md={4}>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
-                                IAS Coaching
-                              </Typography>
-                              <Chip
-                                label={
-                                  selectedStudent.iasCoaching ? "Yes" : "No"
-                                }
-                                color={
-                                  selectedStudent.iasCoaching
-                                    ? "success"
-                                    : "default"
-                                }
-                                size="small"
-                              />
-                            </Grid>
                           </>
                         )}
                         {selectedStudent.remarks && (
@@ -1381,7 +1342,7 @@ const StudentManagement = () => {
               <Alert severity="info" sx={{ mb: 3 }}>
                 <strong>Note:</strong> Only basic details can be edited. Room
                 number, seat number, registration code, application number, exam
-                marks, result status, rank, scholarship and IAS coaching are
+                marks, result status, and rank are
                 system-generated and cannot be modified.
               </Alert>
 

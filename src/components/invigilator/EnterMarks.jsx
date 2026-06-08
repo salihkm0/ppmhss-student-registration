@@ -61,6 +61,7 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [activeClassTab, setActiveClassTab] = useState("10");
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [bulkMarks, setBulkMarks] = useState("");
   const [autoSave, setAutoSave] = useState(false);
@@ -591,11 +592,14 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
 
   // Calculate progress
   const calculateProgress = () => {
-    const totalStudents = students.length;
-    const enteredMarks = Object.values(marks).filter(mark => 
-      mark !== '' && mark !== undefined && mark !== null
-    ).length;
-    return totalStudents > 0 ? (enteredMarks / totalStudents) * 100 : 0;
+    const classStudents = students.filter(s => s.studyingClass === activeClassTab);
+    const totalStudents = classStudents.length;
+    if (totalStudents === 0) return 0;
+    const enteredMarks = classStudents.filter(s => {
+      const mark = marks[s._id];
+      return mark !== '' && mark !== undefined && mark !== null;
+    }).length;
+    return (enteredMarks / totalStudents) * 100;
   };
 
   // Check if student is editable
@@ -643,13 +647,27 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
         </Box>
       </Paper>
 
+      {/* Class Selection Tabs */}
+      <Paper sx={{ mb: 2 }}>
+        <Tabs
+          value={activeClassTab}
+          onChange={(e, v) => setActiveClassTab(v)}
+          indicatorColor="primary"
+          textColor="primary"
+          variant="fullWidth"
+        >
+          <Tab label="Class 10" value="10" />
+          <Tab label="Class 12" value="12" />
+        </Tabs>
+      </Paper>
+
       {/* Progress and Controls */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Grid container alignItems="center" spacing={2}>
           <Grid item xs={12} md={6}>
             <Box>
               <Typography variant="body2" gutterBottom>
-                Marks Entry Progress for Room {selectedRoom}
+                Marks Entry Progress for Room {selectedRoom} (Class {activeClassTab})
               </Typography>
               <LinearProgress
                 variant="determinate"
@@ -657,7 +675,7 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
                 sx={{ height: 8, borderRadius: 4 }}
               />
               <Typography variant="caption" color="text.secondary">
-                {Object.values(marks).filter(mark => mark !== '' && mark !== undefined && mark !== null).length} / {students.length} marks entered
+                {students.filter(s => s.studyingClass === activeClassTab && marks[s._id] !== '' && marks[s._id] !== undefined && marks[s._id] !== null).length} / {students.filter(s => s.studyingClass === activeClassTab).length} marks entered
               </Typography>
             </Box>
           </Grid>
@@ -693,167 +711,177 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {students.map((student) => {
-              const editable = isStudentEditable(student);
-              
-              return (
-                <TableRow 
-                  key={student._id} 
-                  hover
-                  sx={{
-                    bgcolor: student.markEntryStatus === 'final' ? '#f5f5f5' : 'inherit',
-                    opacity: student.markEntryStatus === 'final' ? 0.8 : 1
-                  }}
-                >
-                  <TableCell>
-                    <Chip label={student.seatNo} size="small" />
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar sx={{ bgcolor: '#2563eb' }}>
-                        {student.name.charAt(0)}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="body2" fontWeight={500}>
-                          {student.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {student.studyingClass}
-                        </Typography>
+            {students.filter(student => student.studyingClass === activeClassTab).length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                  <Typography color="text.secondary">
+                    No Class {activeClassTab} students found in this room.
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              students.filter(student => student.studyingClass === activeClassTab).map((student) => {
+                const editable = isStudentEditable(student);
+                
+                return (
+                  <TableRow 
+                    key={student._id} 
+                    hover
+                    sx={{
+                      bgcolor: student.markEntryStatus === 'final' ? '#f5f5f5' : 'inherit',
+                      opacity: student.markEntryStatus === 'final' ? 0.8 : 1
+                    }}
+                  >
+                    <TableCell>
+                      <Chip label={student.seatNo} size="small" />
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar sx={{ bgcolor: '#2563eb' }}>
+                          {student.name.charAt(0)}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2" fontWeight={500}>
+                            {student.name}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Class {student.studyingClass}
+                          </Typography>
+                        </Box>
                       </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" fontFamily="monospace">
-                      {student.registrationCode}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={600}>
-                      {student.examMarks === 0 ? '0 (Absent)' : student.examMarks || '-'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    {editable ? (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <TextField
-                          size="small"
-                          type="number"
-                          value={marks[student._id] || ''}
-                          onChange={(e) => handleMarkChange(student._id, e.target.value)}
-                          onBlur={(e) => {
-                            if (!autoSave && e.target.value && parseInt(e.target.value) !== student.examMarks) {
-                              handleSaveSingleMark(student._id, e.target.value);
-                            }
-                          }}
-                          onKeyPress={(e) => {
-                            if (e.key === 'Enter' && !autoSave) {
-                              if (e.target.value && parseInt(e.target.value) !== student.examMarks) {
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontFamily="monospace">
+                        {student.registrationCode}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={600}>
+                        {student.examMarks === 0 ? '0 (Absent)' : student.examMarks || '-'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      {editable ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <TextField
+                            size="small"
+                            type="number"
+                            value={marks[student._id] || ''}
+                            onChange={(e) => handleMarkChange(student._id, e.target.value)}
+                            onBlur={(e) => {
+                              if (!autoSave && e.target.value && parseInt(e.target.value) !== student.examMarks) {
                                 handleSaveSingleMark(student._id, e.target.value);
                               }
-                            }
-                          }}
-                          inputProps={{ 
-                            min: 0, 
-                            max: 100,
-                            style: { textAlign: 'center' },
-                            placeholder: "0-100"
-                          }}
-                          sx={{ width: 90 }}
-                          disabled={savingStudentId === student._id}
-                        />
-                        {savingStudentId === student._id && (
-                          <CircularProgress size={16} />
-                        )}
-                      </Box>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                        {student.markEntryStatus === 'final' ? 'Finalized - Not Editable' : 'Submitted - Not Editable'}
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {student.markEntryStatus === 'final' ? (
-                      <Chip 
-                        label="Final" 
-                        color="secondary" 
-                        size="small" 
-                        icon={<LockIcon />}
-                      />
-                    ) : student.markEntryStatus === 'submitted' ? (
-                      <Chip 
-                        label="Submitted" 
-                        color="success" 
-                        size="small" 
-                        icon={<CheckCircleIcon />}
-                      />
-                    ) : student.markEntryStatus === 'draft' ? (
-                      <Chip 
-                        label="Draft" 
-                        color="info" 
-                        size="small" 
-                        icon={<SaveIcon />}
-                      />
-                    ) : student.examMarks === 0 ? (
-                      <Chip 
-                        label="Absent" 
-                        color="error" 
-                        size="small" 
-                        icon={<AbsentIcon />}
-                      />
-                    ) : student.examMarks ? (
-                      <Chip label="Previously Entered" color="default" size="small" />
-                    ) : (
-                      <Chip label="Pending" color="warning" size="small" />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
-                      {editable && (
-                        <>
-                          <Tooltip title="Save">
-                            <IconButton
-                              size="small"
-                              onClick={() => {
-                                if (marks[student._id] && parseInt(marks[student._id]) !== student.examMarks) {
-                                  handleSaveSingleMark(student._id, marks[student._id]);
-                                }
-                              }}
-                              disabled={
-                                !marks[student._id] || 
-                                parseInt(marks[student._id]) === student.examMarks ||
-                                savingStudentId === student._id
+                            }}
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter' && !autoSave) {
+                                  if (e.target.value && parseInt(e.target.value) !== student.examMarks) {
+                                    handleSaveSingleMark(student._id, e.target.value);
+                                  }
                               }
-                              color="primary"
-                            >
-                              <SaveIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="More Options">
-                            <IconButton
-                              size="small"
-                              onClick={(e) => handleMenuOpen(e, student)}
-                              color="default"
-                            >
-                              <MoreVertIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </>
+                            }}
+                            inputProps={{ 
+                              min: 0, 
+                              max: 100,
+                              style: { textAlign: 'center' },
+                              placeholder: "0-100"
+                            }}
+                            sx={{ width: 90 }}
+                            disabled={savingStudentId === student._id}
+                          />
+                          {savingStudentId === student._id && (
+                            <CircularProgress size={16} />
+                          )}
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                          {student.markEntryStatus === 'final' ? 'Finalized - Not Editable' : 'Submitted - Not Editable'}
+                        </Typography>
                       )}
-                      <Tooltip title="View History">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleViewHistory(student._id)}
-                          color="info"
-                        >
-                          <HistoryIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+                    </TableCell>
+                    <TableCell>
+                      {student.markEntryStatus === 'final' ? (
+                        <Chip 
+                          label="Final" 
+                          color="secondary" 
+                          size="small" 
+                          icon={<LockIcon />}
+                        />
+                      ) : student.markEntryStatus === 'submitted' ? (
+                        <Chip 
+                          label="Submitted" 
+                          color="success" 
+                          size="small" 
+                          icon={<CheckCircleIcon />}
+                        />
+                      ) : student.markEntryStatus === 'draft' ? (
+                        <Chip 
+                          label="Draft" 
+                          color="info" 
+                          size="small" 
+                          icon={<SaveIcon />}
+                        />
+                      ) : student.examMarks === 0 ? (
+                        <Chip 
+                          label="Absent" 
+                          color="error" 
+                          size="small" 
+                          icon={<AbsentIcon />}
+                        />
+                      ) : student.examMarks ? (
+                        <Chip label="Previously Entered" color="default" size="small" />
+                      ) : (
+                        <Chip label="Pending" color="warning" size="small" />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        {editable && (
+                          <>
+                            <Tooltip title="Save">
+                              <IconButton
+                                size="small"
+                                onClick={() => {
+                                  if (marks[student._id] && parseInt(marks[student._id]) !== student.examMarks) {
+                                    handleSaveSingleMark(student._id, marks[student._id]);
+                                  }
+                                }}
+                                disabled={
+                                  !marks[student._id] || 
+                                  parseInt(marks[student._id]) === student.examMarks ||
+                                  savingStudentId === student._id
+                                }
+                                color="primary"
+                              >
+                                <SaveIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="More Options">
+                              <IconButton
+                                size="small"
+                                onClick={(e) => handleMenuOpen(e, student)}
+                                color="default"
+                              >
+                                <MoreVertIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </>
+                        )}
+                        <Tooltip title="View History">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleViewHistory(student._id)}
+                            color="info"
+                          >
+                            <HistoryIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
           </TableBody>
         </Table>
       </TableContainer>

@@ -147,88 +147,11 @@ const ResultLookup = () => {
     return null;
   };
 
-  const getScholarshipText = (scholarship) => {
-    switch (scholarship) {
-      case "Gold":
-        return "Gold Scholarship";
-      case "Silver":
-        return "Silver Scholarship";
-      case "Bronze":
-        return "Bronze Scholarship";
-      default:
-        return "Not Eligible";
-    }
-  };
-
-  const getScholarshipColor = (scholarship) => {
-    switch (scholarship) {
-      case "Gold":
-        return "warning";
-      case "Silver":
-        return "default";
-      case "Bronze":
-        return "secondary";
-      default:
-        return "default";
-    }
-  };
-
   const openWhatsApp = (number) => {
     const message =
       "Hello, I need assistance with the NMEA TENDER SCHOLAR 26 results.";
     const url = `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank");
-  };
-
-  const getScholarshipValue = (result) => {
-    return result?.scholarship || result?.scholarshipType || "";
-  };
-
-  const isStudentSelected = (student) => {
-    const marks = student?.examMarks || 0;
-    return marks >= 15;
-  };
-
-  // FIXED: Use the API response directly for IAS eligibility
-  const isIASEligible = (student) => {
-    // If the API already provides iasCoaching field, use it
-    if (student?.iasCoaching !== undefined) {
-      return (
-        student.iasCoaching === true ||
-        student.iasCoaching === "Eligible" ||
-        student.iasCoaching === "ELIGIBLE"
-      );
-    }
-    // Fallback to calculation if API doesn't provide it
-    const marks = student?.examMarks || student?.marks || 0;
-    const rank = student?.rank || 0;
-    return rank <= 100 && marks >= 15;
-  };
-
-  // Helper to normalize scholarship value from API
-  const getNormalizedScholarship = (student) => {
-    if (!student) return "";
-    if (
-      student.scholarship &&
-      student.scholarship !== "Not Eligible" &&
-      student.scholarship !== "Not Eligible"
-    ) {
-      return student.scholarship;
-    }
-    if (student.scholarshipType && student.scholarshipType !== "Not Eligible") {
-      return student.scholarshipType;
-    }
-    return "";
-  };
-
-  // Helper to check if student has scholarship
-  const hasScholarship = (student) => {
-    const scholarship = getNormalizedScholarship(student);
-    return (
-      scholarship === "Gold" ||
-      scholarship === "Silver" ||
-      scholarship === "Bronze"
-    );
   };
 
   // Render results
@@ -425,38 +348,13 @@ const ResultLookup = () => {
               Result Details
             </Typography>
 
-            {/* Selection Status - UPDATED MESSAGES */}
-            {isStudentSelected(result.result) ? (
-              <Alert severity="success" sx={{ mb: 2 }}>
-                <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
-                  Congratulations!
-                </Typography>
-                <Typography variant="body2">
-                  You have been selected for the one-day{" "}
-                  <strong>Butterfly Workshop 2026.</strong>
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 1, fontStyle: "italic" }}>
-                  Further details will be shared through the WhatsApp group.
-                </Typography>
-              </Alert>
-            ) : (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 600 , color: "red"}}>
-                  Sorry!
-                </Typography>
-                <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                  You have not been selected.
-                </Typography>
-              </Alert>
-            )}
-
             {/* Student Info */}
             <Grid container spacing={2} sx={{ mb: 2 }}>
               <Grid item xs={12} sm={6}>
                 <Typography variant="caption" color="text.secondary">
                   Candidate Name
                 </Typography>
-                <Typography variant="body1" fontWeight={500}>
+                <Typography variant="body1" fontWeight={600}>
                   {result.result.student?.name || result.student?.name || "N/A"}
                 </Typography>
               </Grid>
@@ -466,7 +364,7 @@ const ResultLookup = () => {
                 </Typography>
                 <Typography
                   variant="body1"
-                  fontWeight={500}
+                  fontWeight={600}
                   fontFamily="monospace"
                 >
                   {result.result.registrationCode}
@@ -479,7 +377,7 @@ const ResultLookup = () => {
                 <Typography variant="caption" color="text.secondary">
                   School
                 </Typography>
-                <Typography variant="body2">
+                <Typography variant="body2" fontWeight={500}>
                   {result.student?.schoolName || "N/A"}
                 </Typography>
               </Grid>
@@ -487,30 +385,31 @@ const ResultLookup = () => {
                 <Typography variant="caption" color="text.secondary">
                   Class
                 </Typography>
-                <Typography variant="body2">
-                  Class {result.student?.studyingClass || "7"}
+                <Typography variant="body2" fontWeight={500}>
+                  Class {result.student?.studyingClass || "N/A"}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  gutterBottom
-                >
-                  Selection Status
+                <Typography variant="caption" color="text.secondary">
+                  Exam Marks
                 </Typography>
-                <Chip
-                  label={
-                    isStudentSelected(result.result)
-                      ? "SELECTED"
-                      : "NOT SELECTED"
-                  }
-                  color={
-                    isStudentSelected(result.result) ? "success" : "default"
-                  }
-                  size="small"
-                />
+                <Typography variant="body1" fontWeight={600} color="primary.main">
+                  {result.result.examMarks || 0} / {result.result.totalMarks || 50}
+                </Typography>
               </Grid>
+              {result.result.rank >= 1 && result.result.rank <= 3 && (
+                <Grid item xs={12} sm={6}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Rank
+                    </Typography>
+                    {getMedalIcon(result.result.rank)}
+                  </Box>
+                  <Typography variant="body1" fontWeight={600} color="warning.main">
+                    Rank {result.result.rank}
+                  </Typography>
+                </Grid>
+              )}
             </Grid>
           </CardContent>
         </Card>
@@ -527,7 +426,7 @@ const ResultLookup = () => {
               {multipleResults.length} registration(s) found
             </Typography>
 
-            {isMobile ? (
+             {isMobile ? (
               // Mobile Card View
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 {multipleResults.map((result, index) => (
@@ -575,56 +474,9 @@ const ResultLookup = () => {
                           <Typography variant="caption" color="text.secondary">
                             Rank
                           </Typography>
-                          <Typography variant="body2">
-                            {result.rank || "N/A"}
+                          <Typography variant="body2" fontWeight={result.rank >= 1 && result.rank <= 3 ? 600 : 400}>
+                            {result.rank >= 1 && result.rank <= 3 ? `Rank ${result.rank}` : "Not Ranked"}
                           </Typography>
-                        </Grid>
-                      </Grid>
-
-                      <Divider sx={{ my: 1 }} />
-
-                      <Grid container spacing={1}>
-                        <Grid item xs={4}>
-                          <Chip
-                            label={
-                              hasScholarship(result)
-                                ? getNormalizedScholarship(result)
-                                : "No"
-                            }
-                            size="small"
-                            color={
-                              hasScholarship(result)
-                                ? getScholarshipColor(
-                                    getNormalizedScholarship(result),
-                                  )
-                                : "default"
-                            }
-                            variant={
-                              hasScholarship(result) ? "filled" : "outlined"
-                            }
-                            sx={{ width: "100%" }}
-                          />
-                        </Grid>
-                        <Grid item xs={4}>
-                          <Chip
-                            label={result.isSelected ? "SELECTED" : "NOT"}
-                            color={result.isSelected ? "success" : "default"}
-                            size="small"
-                            sx={{ width: "100%" }}
-                          />
-                        </Grid>
-                        <Grid item xs={4}>
-                          <Chip
-                            label={isIASEligible(result) ? "IAS" : "No"}
-                            color={
-                              isIASEligible(result) ? "success" : "default"
-                            }
-                            size="small"
-                            variant={
-                              isIASEligible(result) ? "filled" : "outlined"
-                            }
-                            sx={{ width: "100%" }}
-                          />
                         </Grid>
                       </Grid>
                     </CardContent>
@@ -648,15 +500,6 @@ const ResultLookup = () => {
                       </TableCell>
                       <TableCell align="center">
                         <strong>Rank</strong>
-                      </TableCell>
-                      <TableCell align="center">
-                        <strong>Scholarship</strong>
-                      </TableCell>
-                      <TableCell align="center">
-                        <strong>Selection</strong>
-                      </TableCell>
-                      <TableCell align="center">
-                        <strong>IAS</strong>
                       </TableCell>
                     </TableRow>
                   </TableHead>
@@ -708,43 +551,9 @@ const ResultLookup = () => {
                           >
                             {getMedalIcon(result.rank)}
                             <Typography variant="body2">
-                              {result.rank || "N/A"}
+                              {result.rank >= 1 && result.rank <= 3 ? `Rank ${result.rank}` : "Not Ranked"}
                             </Typography>
                           </Box>
-                        </TableCell>
-                        <TableCell align="center">
-                          {hasScholarship(result) ? (
-                            <Chip
-                              label={getNormalizedScholarship(result)}
-                              color={getScholarshipColor(
-                                getNormalizedScholarship(result),
-                              )}
-                              size="small"
-                            />
-                          ) : (
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              -
-                            </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={result.isSelected ? "YES" : "NO"}
-                            color={result.isSelected ? "success" : "default"}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={isIASEligible(result) ? "YES" : "NO"}
-                            color={
-                              isIASEligible(result) ? "success" : "default"
-                            }
-                            size="small"
-                          />
                         </TableCell>
                       </TableRow>
                     ))}

@@ -282,7 +282,7 @@ const StudentLookup = () => {
                     <Typography variant="body2" color="textSecondary">
                       Exam Date & Time
                     </Typography>
-                    <Typography variant="body1">01-03-2026 10:00 AM</Typography>
+                    <Typography variant="body1">28-06-2026 10:00 AM</Typography>
                   </Box>
                 </Grid>
 

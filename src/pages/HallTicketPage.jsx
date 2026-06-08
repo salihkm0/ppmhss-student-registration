@@ -233,7 +233,7 @@ const HallTicketPage = () => {
                   Exam Date
                 </Typography>
                 <Typography variant="body1" fontWeight={600}>
-                  01-03-2026
+                  28-06-2026
                 </Typography>
               </Grid>
               <Grid item xs={12} md={6}>
