@@ -57,7 +57,7 @@ import {
   Celebration as CelebrationIcon,
   SentimentVeryDissatisfied as SadIcon,
 } from "@mui/icons-material";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import toast from "react-hot-toast";
 
 const ResultsManagement = () => {
@@ -91,28 +91,25 @@ const ResultsManagement = () => {
   const [savingMarks, setSavingMarks] = useState(false);
   const [finalizingId, setFinalizingId] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedClass, setSelectedClass] = useState("10");
 
   useEffect(() => {
     fetchTopPerformers();
     fetchResultStats();
     fetchRooms();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, selectedClass]);
 
   useEffect(() => {
     if (tabValue === 1) {
       fetchStudentsByStatus();
       fetchRoomSummary();
     }
-  }, [tabValue, statusFilter, roomFilter, refreshTrigger]);
+  }, [tabValue, statusFilter, roomFilter, refreshTrigger, selectedClass]);
 
   const fetchTopPerformers = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.get(
-        "https://apinmea.oxiumev.com/api/admin/results/top-performers",
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.get(
+        `/admin/results/top-performers?studyingClass=${selectedClass}`
       );
 
       if (response.data.success) {
@@ -128,12 +125,8 @@ const ResultsManagement = () => {
 
   const fetchResultStats = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.get(
-        "https://apinmea.oxiumev.com/api/results/top",
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.get(
+        `/results/top?studyingClass=${selectedClass}`
       );
 
       if (response.data.success) {
@@ -142,10 +135,10 @@ const ResultsManagement = () => {
         // Map API response to component state
         setStats({
           totalStudents: apiStats.totalStudents || 0,
-          selectedStudents: apiStats.selectedStudents || apiStats.passedStudents || 0,
-          notSelectedStudents: apiStats.notSelectedStudents || apiStats.failedStudents || 0,
-          iasEligible: apiStats.iasEligible || 0,
-          selectionPercentage: apiStats.selectionPercentage || apiStats.passPercentage || 0
+          selectedStudents: 0,
+          notSelectedStudents: 0,
+          iasEligible: 0,
+          selectionPercentage: 0
         });
       }
     } catch (error) {
@@ -155,12 +148,8 @@ const ResultsManagement = () => {
 
   const fetchRooms = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.get(
-        "https://apinmea.oxiumev.com/api/admin/rooms/available",
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.get(
+        "/admin/rooms/available"
       );
 
       if (response.data.success) {
@@ -175,16 +164,13 @@ const ResultsManagement = () => {
   const fetchStudentsByStatus = async () => {
     setLoadingStatus(true);
     try {
-      const token = localStorage.getItem("adminToken");
       const params = new URLSearchParams();
       if (statusFilter) params.append("status", statusFilter);
       if (roomFilter) params.append("roomNo", roomFilter);
+      params.append("studyingClass", selectedClass);
 
-      const response = await axios.get(
-        `https://apinmea.oxiumev.com/api/admin/marks/students?${params.toString()}`,
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.get(
+        `/admin/marks/students?${params.toString()}`
       );
 
       if (response.data.success) {
@@ -200,12 +186,8 @@ const ResultsManagement = () => {
 
   const fetchRoomSummary = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.get(
-        "https://apinmea.oxiumev.com/api/admin/marks/room-summary",
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.get(
+        "/admin/marks/room-summary"
       );
 
       if (response.data.success) {
@@ -219,12 +201,8 @@ const ResultsManagement = () => {
   const fetchStudentHistory = async (studentId) => {
     setHistoryLoading(true);
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.get(
-        `https://apinmea.oxiumev.com/api/admin/marks/students/${studentId}/history`,
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.get(
+        `/admin/marks/students/${studentId}/history`
       );
 
       if (response.data.success) {
@@ -256,13 +234,9 @@ const ResultsManagement = () => {
 
     setSavingMarks(true);
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.put(
-        `https://apinmea.oxiumev.com/api/admin/marks/students/${selectedStudent._id}`,
-        { marks },
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.put(
+        `/admin/marks/students/${selectedStudent._id}`,
+        { marks }
       );
 
       if (response.data.success) {
@@ -282,13 +256,9 @@ const ResultsManagement = () => {
   const handleFinalizeMarks = async (studentId) => {
     setFinalizingId(studentId);
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.post(
-        `https://apinmea.oxiumev.com/api/admin/marks/students/${studentId}/finalize`,
-        {},
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.post(
+        `/admin/marks/students/${studentId}/finalize`,
+        {}
       );
 
       if (response.data.success) {
@@ -306,12 +276,8 @@ const ResultsManagement = () => {
   const handleGenerateRanks = async () => {
     // First check if there are any draft marks
     try {
-      const token = localStorage.getItem("adminToken");
-      const draftCheck = await axios.get(
-        "https://apinmea.oxiumev.com/api/admin/marks/students?status=draft",
-        {
-          headers: { "x-auth-token": token },
-        },
+      const draftCheck = await axiosInstance.get(
+        "/admin/marks/students?status=draft"
       );
 
       if (
@@ -329,7 +295,7 @@ const ResultsManagement = () => {
 
     if (
       !window.confirm(
-        "Are you sure you want to generate ranks? This will:\n\n• Assign ranks to all students with submitted marks\n• Use name-based tie-breaking for same marks\n• Award scholarships to top 3\n• Mark IAS coaching eligibility for top 100 with 15+ marks\n• Update result statuses\n\nRoom and seat numbers will NOT be changed.",
+        "Are you sure you want to generate ranks? This will:\n\n• Assign ranks (top 3 only) class-wise to students with submitted marks\n• Use name-based tie-breaking for same marks\n• Update result statuses\n\nRoom and seat numbers will NOT be changed.",
       )
     ) {
       return;
@@ -337,13 +303,9 @@ const ResultsManagement = () => {
 
     setGeneratingRanks(true);
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await axios.post(
-        "https://apinmea.oxiumev.com/api/admin/results/update-ranks",
-        {},
-        {
-          headers: { "x-auth-token": token },
-        },
+      const response = await axiosInstance.post(
+        "/admin/results/update-ranks",
+        {}
       );
 
       if (response.data.success) {
@@ -546,73 +508,33 @@ const ResultsManagement = () => {
         </Button>
       </Box>
 
+      {/* Class Selection Tabs */}
+      <Paper sx={{ mb: 3 }}>
+        <Tabs
+          value={selectedClass}
+          onChange={(e, v) => setSelectedClass(v)}
+          indicatorColor="primary"
+          textColor="primary"
+          variant="fullWidth"
+        >
+          <Tab label="Class 10 Results" value="10" />
+          <Tab label="Class 12 Results" value="12" />
+        </Tabs>
+      </Paper>
+
       {/* Statistics Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ height: "100%" }}>
+        <Grid item xs={12} sm={6}>
+          <Card sx={{ height: "100%", border: '1px solid #e0e0e0', borderRadius: 2 }}>
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                 <NumbersIcon color="primary" sx={{ mr: 1 }} />
                 <Typography variant="subtitle2" color="text.secondary">
-                  Total Students
+                  Total Graded Students (Class {selectedClass})
                 </Typography>
               </Box>
               <Typography variant="h4" fontWeight={600}>
                 {stats?.totalStudents || 0}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ height: "100%" }}>
-            <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <CheckCircleIcon color="success" sx={{ mr: 1 }} />
-                <Typography variant="subtitle2" color="text.secondary">
-                  Selected (15+ Marks)
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight={600} color="success.main">
-                {stats?.selectedStudents || 0}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Eligible for Butterfly Workshop
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ height: "100%" }}>
-            <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <PremiumIcon color="primary" sx={{ mr: 1 }} />
-                <Typography variant="subtitle2" color="text.secondary">
-                  IAS Eligible
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight={600} color="primary.main">
-                {stats?.iasEligible || 0}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Top 100 with 15+ marks
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ height: "100%" }}>
-            <CardContent>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <CancelIcon color="error" sx={{ mr: 1 }} />
-                <Typography variant="subtitle2" color="text.secondary">
-                  Not Selected
-                </Typography>
-              </Box>
-              <Typography variant="h4" fontWeight={600} color="error.main">
-                {stats?.notSelectedStudents || 0}
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Below 15 marks
               </Typography>
             </CardContent>
           </Card>
@@ -658,9 +580,6 @@ const ResultsManagement = () => {
                   <TableCell>Student Details</TableCell>
                   <TableCell width="120">Marks</TableCell>
                   <TableCell width="150">Percentage</TableCell>
-                  <TableCell width="150">Scholarship</TableCell>
-                  <TableCell width="150">Selection</TableCell>
-                  <TableCell width="150">IAS Coaching</TableCell>
                   <TableCell width="120">Room/Seat</TableCell>
                   <TableCell width="100">Status</TableCell>
                 </TableRow>
@@ -668,7 +587,7 @@ const ResultsManagement = () => {
               <TableBody>
                 {topPerformers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                    <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                       <Typography color="text.secondary">
                         No top performers found
                       </Typography>
@@ -691,7 +610,7 @@ const ResultsManagement = () => {
                       <TableCell>
                         <Box
                           sx={{ display: "flex", alignItems: "center", gap: 2 }}
-                        >
+                         >
                           <Avatar sx={{ bgcolor: "#2563eb" }}>
                             {student.name?.charAt(0) || "?"}
                           </Avatar>
@@ -735,11 +654,6 @@ const ResultsManagement = () => {
                           </Typography>
                         </Box>
                       </TableCell>
-                      <TableCell>
-                        {getScholarshipChip(student.scholarship)}
-                      </TableCell>
-                      <TableCell>{getSelectionChip(student)}</TableCell>
-                      <TableCell>{getIASChip(student)}</TableCell>
                       <TableCell>
                         <Typography variant="body2" color="text.secondary">
                           Room {student.roomNo || "N/A"} • Seat {student.seatNo || "N/A"}
@@ -828,7 +742,6 @@ const ResultsManagement = () => {
                     <TableCell>Student</TableCell>
                     <TableCell>Registration</TableCell>
                     <TableCell>Current Marks</TableCell>
-                    <TableCell>Selection</TableCell>
                     <TableCell>Status</TableCell>
                     <TableCell>Last Edited</TableCell>
                     <TableCell>Actions</TableCell>
@@ -837,13 +750,13 @@ const ResultsManagement = () => {
                 <TableBody>
                   {loadingStatus ? (
                     <TableRow>
-                      <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                      <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
                         <CircularProgress size={30} />
                       </TableCell>
                     </TableRow>
                   ) : studentsByStatus.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
+                      <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
                         <Typography color="text.secondary">
                           No students found with the selected filters
                         </Typography>
@@ -886,7 +799,6 @@ const ResultsManagement = () => {
                             {student.examMarks || 0}
                           </Typography>
                         </TableCell>
-                        <TableCell>{getSelectionChip(student)}</TableCell>
                         <TableCell>
                           {getStatusChip(student.markEntryStatus)}
                         </TableCell>
@@ -955,39 +867,37 @@ const ResultsManagement = () => {
         </Box>
       )}
 
-      {/* Scholarship Winners */}
-      {topPerformers.filter((s) => s.scholarship && s.scholarship !== "Not Eligible" && s.scholarship !== "").length > 0 &&
-        tabValue === 0 && (
-          <Paper sx={{ mb: 4 }}>
-            <Box sx={{ p: 3, borderBottom: "1px solid #e0e0e0" }}>
-              <Typography variant="h6" fontWeight={600}>
-                Scholarship Winners
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Top 3 performers receiving scholarships
-              </Typography>
-            </Box>
-            <Grid container spacing={3} sx={{ p: 3 }}>
-              {topPerformers
-                .filter((s) => s.scholarship && s.scholarship !== "Not Eligible" && s.scholarship !== "")
-                .sort((a, b) => {
-                  // Sort by scholarship type (Gold, Silver, Bronze)
-                  const scholarshipOrder = { Gold: 1, Silver: 2, Bronze: 3 };
-                  return (
-                    scholarshipOrder[a.scholarship] -
-                    scholarshipOrder[b.scholarship]
-                  );
-                })
-                .slice(0, 3) // Ensure only top 3
+      {/* Top 3 Performers Leaderboard */}
+      {tabValue === 0 && (
+        <Paper sx={{ mb: 4, borderRadius: 2 }}>
+          <Box sx={{ p: 3, borderBottom: "1px solid #e0e0e0" }}>
+            <Typography variant="h6" fontWeight={600}>
+              Top 3 Performers (Class {selectedClass})
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Top 3 ranked students in Class {selectedClass}
+            </Typography>
+          </Box>
+          <Grid container spacing={3} sx={{ p: 3 }}>
+            {topPerformers.filter(s => s.rank >= 1 && s.rank <= 3).length === 0 ? (
+              <Grid item xs={12}>
+                <Typography color="text.secondary" align="center" sx={{ py: 2 }}>
+                  No ranked students found. Click "Generate Ranks" to assign ranks.
+                </Typography>
+              </Grid>
+            ) : (
+              topPerformers
+                .filter((s) => s.rank >= 1 && s.rank <= 3)
+                .sort((a, b) => a.rank - b.rank)
                 .map((student) => (
                   <Grid item xs={12} md={4} key={student._id}>
                     <Card
                       sx={{
                         textAlign: "center",
                         border: `2px solid ${
-                          student.scholarship === "Gold"
+                          student.rank === 1
                             ? "#FFD700"
-                            : student.scholarship === "Silver"
+                            : student.rank === 2
                               ? "#C0C0C0"
                               : "#CD7F32"
                         }`,
@@ -1003,9 +913,9 @@ const ResultsManagement = () => {
                             mb: 2,
                             fontSize: "2rem",
                             bgcolor:
-                              student.scholarship === "Gold"
+                              student.rank === 1
                                 ? "#FFD700"
-                                : student.scholarship === "Silver"
+                                : student.rank === 2
                                   ? "#C0C0C0"
                                   : "#CD7F32",
                           }}
@@ -1013,15 +923,13 @@ const ResultsManagement = () => {
                           {student.name?.charAt(0) || "?"}
                         </Avatar>
                         <Chip
-                          label={`${student.scholarship} Medal`}
+                          label={`Rank ${student.rank}`}
                           color={
-                            student.scholarship === "Gold"
+                            student.rank === 1
                               ? "warning"
-                              : student.scholarship === "Silver"
-                                ? "default"
-                                : "secondary"
+                              : "default"
                           }
-                          sx={{ mb: 2 }}
+                          sx={{ mb: 2, fontWeight: 600 }}
                         />
                         <Typography variant="h6" fontWeight={600}>
                           {student.name || "N/A"}
@@ -1050,10 +958,11 @@ const ResultsManagement = () => {
                       </CardContent>
                     </Card>
                   </Grid>
-                ))}
-            </Grid>
-          </Paper>
-        )}
+                ))
+            )}
+          </Grid>
+        </Paper>
+      )}
 
       {/* Edit Marks Dialog */}
       <Dialog
@@ -1242,9 +1151,7 @@ const ResultsManagement = () => {
               Summary:
             </Typography>
             <Box component="ul" sx={{ pl: 2, mb: 0 }}>
-              <li>Top 3 students awarded scholarships</li>
-              <li>Top 100 students with 15+ marks eligible for IAS coaching</li>
-              <li>Students with 15+ marks selected for Butterfly Workshop</li>
+              <li>Top 3 students assigned Class-wise Ranks (1, 2, 3)</li>
               <li>Name-based tie-breaking applied for same marks</li>
               <li>Room and seat numbers preserved</li>
               <li>Result statuses updated</li>
@@ -1259,7 +1166,7 @@ const ResultsManagement = () => {
           {generationResult?.data?.iasDetails && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="body2" color="text.secondary">
-                IAS Coaching Cutoff: <strong>{generationResult.data.iasDetails.iasCoachingCutoff || 0}</strong> marks
+                Ranks generated separately for Class 10 and Class 12.
               </Typography>
             </Box>
           )}

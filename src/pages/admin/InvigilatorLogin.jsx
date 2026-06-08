@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
 import {
   Container,
@@ -53,7 +53,7 @@ const InvigilatorLogin = () => {
     setError('');
 
     try {
-      const response = await axios.post('https://apinmea.oxiumev.com/api/invigilator/login', formData);
+      const response = await axiosInstance.post('/invigilator/login', formData);
       
       if (response.data.success) {
         // Store invigilator token and data

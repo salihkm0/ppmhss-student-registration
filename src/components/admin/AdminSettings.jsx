@@ -30,7 +30,7 @@ import {
   Notifications as NotificationsIcon,
   Security as SecurityIcon,
 } from "@mui/icons-material";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import toast from "react-hot-toast";
 
 const AdminSettings = () => {
@@ -107,12 +107,9 @@ const AdminSettings = () => {
         updateData.newPassword = formData.newPassword;
       }
 
-      const response = await axios.put(
-        "https://apinmea.oxiumev.com/api/admin/profile",
-        updateData,
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.put(
+        "/admin/profile",
+        updateData
       );
 
       if (response.data.success) {

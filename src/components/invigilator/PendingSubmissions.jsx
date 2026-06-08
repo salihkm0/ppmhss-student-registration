@@ -28,7 +28,7 @@ import {
   Warning as WarningIcon,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axiosInstance from "../../api/axiosInstance";
 import toast from "react-hot-toast";
 
 const PendingSubmissions = ({ dashboardData }) => {
@@ -44,12 +44,8 @@ const PendingSubmissions = ({ dashboardData }) => {
 
   const fetchPendingSubmissions = async () => {
     try {
-      const token = localStorage.getItem('invigilatorToken');
-      const response = await axios.get(
-        "https://apinmea.oxiumev.com/api/invigilator/pending-submissions",
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.get(
+        "/invigilator/pending-submissions"
       );
 
       if (response.data.success) {
@@ -67,13 +63,9 @@ const PendingSubmissions = ({ dashboardData }) => {
   const handleSubmit = async (studentId) => {
     setSubmitting(prev => ({ ...prev, [studentId]: true }));
     try {
-      const token = localStorage.getItem('invigilatorToken');
-      const response = await axios.post(
-        `https://apinmea.oxiumev.com/api/invigilator/students/${studentId}/submit`,
-        {},
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.post(
+        `/invigilator/students/${studentId}/submit`,
+        {}
       );
 
       if (response.data.success) {
@@ -105,13 +97,9 @@ const PendingSubmissions = ({ dashboardData }) => {
 
     setSubmitting(prev => ({ ...prev, [`room-${roomNo}`]: true }));
     try {
-      const token = localStorage.getItem('invigilatorToken');
-      const response = await axios.post(
-        `https://apinmea.oxiumev.com/api/invigilator/rooms/${roomNo}/submit-all`,
-        {},
-        {
-          headers: { "x-auth-token": token },
-        }
+      const response = await axiosInstance.post(
+        `/invigilator/rooms/${roomNo}/submit-all`,
+        {}
       );
 
       if (response.data.success) {

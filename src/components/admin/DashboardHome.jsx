@@ -460,14 +460,7 @@ const DashboardHome = ({ stats }) => {
                     {student.registrationCode} • Marks: {student.examMarks}
                   </Typography>
                 </Box>
-                {student.scholarship && (
-                  <Chip 
-                    label="Scholar" 
-                    size="small" 
-                    color="success"
-                    sx={{ ml: 1 }}
-                  />
-                )}
+                {/* Scholarship chip removed */}
               </Box>
             ))}
             {topPerformers.length === 0 && (
