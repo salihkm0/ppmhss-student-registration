@@ -117,7 +117,7 @@ const SuccessPage = () => {
   const handleWhatsApp = () => {
     if (!registrationData) return;
 
-    const hallTicketLink = `https://apinmea.oxiumev.com/api/students/${registrationData.registrationCode}/hallticket/download`;
+    const hallTicketLink = `https://nmea.ppmhsskottukkara.com/api/students/${registrationData.registrationCode}/hallticket/download`;
 
     let message = `📋 *NMEA TENDER SCHOLAR 26 - Registration Details*\n\n`;
     message += `👤 *Name:* ${registrationData.name}\n`;
