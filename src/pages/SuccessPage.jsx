@@ -150,7 +150,7 @@ const SuccessPage = () => {
     if (!registrationData) return;
 
     window.open(
-      `https://apinmea.oxiumev.com/api/students/${registrationData.registrationCode}/hallticket/download`,
+      `https://nmea.ppmhsskottukkara.com/api/students/${registrationData.registrationCode}/hallticket/download`,
       "_blank",
     );
   };
