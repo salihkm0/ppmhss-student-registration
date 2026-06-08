@@ -1187,7 +1187,7 @@ const RegistrationForm = () => {
                   Contact
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  +91 9947073499, +91 8547645640
+                  +91 9349781941, +91 9961976080
                 </Typography>
               </Box>
             </Grid>
