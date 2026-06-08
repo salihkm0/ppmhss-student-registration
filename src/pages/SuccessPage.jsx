@@ -249,20 +249,20 @@ const SuccessPage = () => {
               variant="outlined"
               color="success"
               startIcon={<WhatsAppIcon />}
-              onClick={() => openWhatsApp('919947073499')}
+              onClick={() => openWhatsApp('919349781941')}
               fullWidth
             >
-              99470 73499
+              Muhammed Iqbal
             </Button>
             
             <Button
               variant="outlined"
               color="success"
               startIcon={<WhatsAppIcon />}
-              onClick={() => openWhatsApp('918547645640')}
+              onClick={() => openWhatsApp('919961976080')}
               fullWidth
             >
-              85476 45640
+              Abdusamad. K
             </Button>
 
             <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', mt: 1 }}>
@@ -645,7 +645,7 @@ const SuccessPage = () => {
                 Contact
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                +91 9947073499, +91 8547645640
+                +91 9349781941, +91 9961976080
               </Typography>
             </Box>
           </Grid>
