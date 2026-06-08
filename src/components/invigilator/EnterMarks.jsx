@@ -29,6 +29,8 @@ import {
   Switch,
   Menu,
   MenuItem,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   Save as SaveIcon,
