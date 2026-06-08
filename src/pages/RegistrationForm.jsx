@@ -852,20 +852,20 @@ const RegistrationForm = () => {
               variant="outlined"
               color="success"
               startIcon={<WhatsAppIcon />}
-              onClick={() => openWhatsApp("919947073499")}
+              onClick={() => openWhatsApp("919349781941")}
               fullWidth
             >
-              99470 73499
+              Muhammed Iqbal
             </Button>
 
             <Button
               variant="outlined"
               color="success"
               startIcon={<WhatsAppIcon />}
-              onClick={() => openWhatsApp("918547645640")}
+              onClick={() => openWhatsApp("919961976080")}
               fullWidth
             >
-              85476 45640
+              Abdusamad K
             </Button>
 
             <Typography
@@ -905,52 +905,6 @@ const RegistrationForm = () => {
               mb: 3,
             }}
           >
-            {/* Logos Row for Mobile */}
-            {/* <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        width: '100%',
-        maxWidth: 300
-      }}>
-
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center',
-          flex: 1
-        }}>
-          <Box
-            component="img"
-            src="https://res.cloudinary.com/dmjqgjcut/image/upload/v1769946977/school-logo_uugskb.jpg"
-            alt="School Logo"
-            sx={{
-              width: 70,
-              height: 70,
-              objectFit: 'contain'
-            }}
-          />
-        </Box>
-
-
-        <Box sx={{ 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center',
-          flex: 1
-        }}>
-          <Box
-            component="img"
-            src="https://res.cloudinary.com/dmjqgjcut/image/upload/v1769946976/50th_t44gva.jpg"
-            alt="50th Anniversary Logo"
-            sx={{
-              width: 70,
-              height: 70,
-              objectFit: 'contain'
-            }}
-          />
-        </Box>
-      </Box>
 
       {/* Title for Mobile */}
             <Box sx={{ textAlign: "center" }}>
