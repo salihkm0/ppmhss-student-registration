@@ -223,21 +223,21 @@ const ResultLookup = () => {
               variant="outlined"
               color="success"
               startIcon={<WhatsAppIcon />}
-              onClick={() => openWhatsApp("919947073499")}
+              onClick={() => openWhatsApp("919349781941")}
               fullWidth
               size={isMobile ? "medium" : "large"}
             >
-              99470 73499
+              Muhammed Iqbal
             </Button>
             <Button
               variant="outlined"
               color="success"
               startIcon={<WhatsAppIcon />}
-              onClick={() => openWhatsApp("918547645640")}
+              onClick={() => openWhatsApp("919961976080")}
               fullWidth
               size={isMobile ? "medium" : "large"}
             >
-              85476 45640
+              Abdusamad. K
             </Button>
           </Box>
         </DialogContent>

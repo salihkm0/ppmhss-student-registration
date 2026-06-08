@@ -302,7 +302,7 @@ const HallTicketPage = () => {
       {/* Footer */}
       <Box sx={{ textAlign: 'center', mt: 4, pt: 3, borderTop: '1px solid #e0e0e0' }}>
         <Typography variant="body2" color="text.secondary">
-          For any queries, contact: +91 9947073499, +91 8547645640
+          For any queries, contact: +91 9349781941, +91 9961976080
         </Typography>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
           © {new Date().getFullYear()} PPMHSS Kottukkara - All rights reserved
