@@ -272,6 +272,8 @@ const StudentManagement = () => {
       aadhaarNo: student.aadhaarNo || "",
       phoneNo: student.phoneNo || "",
       gender: student.gender || "",
+      dob: student.dob ? student.dob.substring(0, 10) : "",
+      lastPublicExamRegNo: student.lastPublicExamRegNo || "",
       schoolName: student.schoolName || "",
       studyingClass: student.studyingClass || "",
       medium: student.medium || "",
@@ -331,6 +333,16 @@ const StudentManagement = () => {
         );
         return false;
       }
+    }
+
+    if (!editFormData.dob || editFormData.dob.trim() === "") {
+      toast.error("Date of birth is required");
+      return false;
+    }
+
+    if (editFormData.studyingClass === "12" && (!editFormData.lastPublicExamRegNo || editFormData.lastPublicExamRegNo.trim() === "")) {
+      toast.error("Last public exam registration number is required for Class 12");
+      return false;
     }
 
     // Address required fields
@@ -416,6 +428,8 @@ const StudentManagement = () => {
         "aadhaarNo",
         "phoneNo",
         "gender",
+        "dob",
+        "lastPublicExamRegNo",
         "schoolName",
         "studyingClass",
         "medium",
@@ -423,7 +437,14 @@ const StudentManagement = () => {
       ];
 
       basicFields.forEach((field) => {
-        if (editFormData[field] !== selectedStudent[field]) {
+        let isChanged = false;
+        if (field === "dob") {
+          const originalDobDate = selectedStudent.dob ? selectedStudent.dob.substring(0, 10) : "";
+          isChanged = editFormData.dob !== originalDobDate;
+        } else {
+          isChanged = editFormData[field] !== selectedStudent[field];
+        }
+        if (isChanged) {
           updateData[field] = editFormData[field];
         }
       });
@@ -499,7 +520,7 @@ const StudentManagement = () => {
   };
 
   const handleDownloadHallTicket = (registrationCode) => {
-    const apiBase = import.meta.env.VITE_API_URL || 'https://apinmea.oxiumev.com/api';
+    const apiBase = import.meta.env.VITE_API_URL || 'https://nmea.ppmhsskottukkara.com/api';
     window.open(
       `${apiBase}/students/${registrationCode}/hallticket/download`,
       "_blank",
@@ -979,7 +1000,7 @@ const StudentManagement = () => {
                               gap: 1,
                             }}
                           >
-                            {getGenderIcon(selectedStudent.gender)}
+                        {getGenderIcon(selectedStudent.gender)}
                             <Typography variant="body1">
                               {selectedStudent.gender}
                             </Typography>
@@ -991,6 +1012,22 @@ const StudentManagement = () => {
                           </Typography>
                           <Typography variant="body1">
                             {selectedStudent.fatherName}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <Typography variant="caption" color="text.secondary">
+                            Date of Birth
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedStudent.dob ? new Date(selectedStudent.dob).toLocaleDateString('en-IN') : 'N/A'}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <Typography variant="caption" color="text.secondary">
+                            Last Public Exam Reg No
+                          </Typography>
+                          <Typography variant="body1">
+                            {selectedStudent.lastPublicExamRegNo || 'N/A'}
                           </Typography>
                         </Grid>
                         <Grid item xs={12} md={6}>
@@ -1392,6 +1429,32 @@ const StudentManagement = () => {
                             required
                             variant="outlined"
                             size="small"
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Date of Birth"
+                            name="dob"
+                            type="date"
+                            value={editFormData.dob}
+                            onChange={handleEditFormChange}
+                            required
+                            variant="outlined"
+                            size="small"
+                            InputLabelProps={{ shrink: true }}
+                          />
+                        </Grid>
+                        <Grid item xs={12} md={6}>
+                          <TextField
+                            fullWidth
+                            label="Last Public Exam Reg No"
+                            name="lastPublicExamRegNo"
+                            value={editFormData.lastPublicExamRegNo}
+                            onChange={handleEditFormChange}
+                            variant="outlined"
+                            size="small"
+                            helperText={editFormData.studyingClass === "12" ? "Required for Class 12" : "Optional for Class 10"}
                           />
                         </Grid>
                         <Grid item xs={12} md={6}>

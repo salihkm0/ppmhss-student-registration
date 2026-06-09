@@ -141,14 +141,14 @@ const RoomManagement = ({ stats }) => {
 
   const handleDownloadAttendanceSheet = (roomNo) => {
     const token = localStorage.getItem('adminToken');
-    const apiBase = import.meta.env.VITE_API_URL || 'https://apinmea.oxiumev.com/api';
+    const apiBase = import.meta.env.VITE_API_URL || 'https://nmea.ppmhsskottukkara.com/api';
     const url = `${apiBase}/admin/room-attendance/${roomNo}/pdf?preview=false&print=true&token=${token}`;
     downloadPDF(url);
   };
 
   const handleDownloadExamSlips = (roomNo) => {
     const token = localStorage.getItem('adminToken');
-    const apiBase = import.meta.env.VITE_API_URL || 'https://apinmea.oxiumev.com/api';
+    const apiBase = import.meta.env.VITE_API_URL || 'https://nmea.ppmhsskottukkara.com/api';
     const url = `${apiBase}/admin/simple-exam-slips/${roomNo}?preview=false&print=true&token=${token}`;
     downloadPDF(url);
   };
@@ -156,7 +156,7 @@ const RoomManagement = ({ stats }) => {
   // NEW FUNCTION: Download Room Register Range PDF (all rooms)
   const handleDownloadRegisterRange = () => {
     const token = localStorage.getItem('adminToken');
-    const apiBase = import.meta.env.VITE_API_URL || 'https://apinmea.oxiumev.com/api';
+    const apiBase = import.meta.env.VITE_API_URL || 'https://nmea.ppmhsskottukkara.com/api';
     const url = `${apiBase}/rooms/register-range/pdf?preview=false&print=true&token=${token}`;
     downloadPDF(url);
     toast.success("Generating room register range PDF...");
@@ -546,7 +546,7 @@ const RoomManagement = ({ stats }) => {
                         <IconButton
                           size="small"
                           onClick={() => {
-                            const apiBase = import.meta.env.VITE_API_URL || 'https://apinmea.oxiumev.com/api';
+                            const apiBase = import.meta.env.VITE_API_URL || 'https://nmea.ppmhsskottukkara.com/api';
                             window.open(`${apiBase}/students/${student.registrationCode}/hallticket/download`, '_blank');
                           }}
                         >

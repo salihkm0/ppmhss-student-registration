@@ -25,6 +25,7 @@ import {
   Assignment as AssignmentIcon,
   Phone as PhoneIcon,
   Home as HomeIcon,
+  CalendarToday as CalendarIcon,
 } from "@mui/icons-material";
 import axiosInstance from "../api/axiosInstance";
 import toast from "react-hot-toast";
@@ -65,7 +66,7 @@ const HallTicketPage = () => {
 
   const handleDownload = () => {
     window.open(
-      `https://apinmea.oxiumev.com/api/students/${code}/hallticket/download`,
+      `https://nmea.ppmhsskottukkara.com/api/students/${code}/hallticket/download`,
       "_blank"
     );
   };
@@ -205,6 +206,34 @@ const HallTicketPage = () => {
                     </Typography>
                     <Typography variant="body1">
                       {student.phoneNo}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <CalendarIcon sx={{ mr: 2, color: 'primary.main' }} />
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      Date of Birth
+                    </Typography>
+                    <Typography variant="body1">
+                      {student.dob ? new Date(student.dob).toLocaleDateString('en-IN') : 'Not provided'}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} md={6}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                  <AssignmentIcon sx={{ mr: 2, color: 'primary.main' }} />
+                  <Box>
+                    <Typography variant="body2" color="textSecondary">
+                      Last Public Exam Reg No
+                    </Typography>
+                    <Typography variant="body1">
+                      {student.lastPublicExamRegNo || 'Not applicable'}
                     </Typography>
                   </Box>
                 </Box>
