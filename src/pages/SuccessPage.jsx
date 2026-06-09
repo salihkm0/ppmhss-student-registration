@@ -307,12 +307,12 @@ const SuccessPage = () => {
           </Typography>
         </Box>
 
-        <Alert severity="success" sx={{ mb: 3 }}>
+        {/* <Alert severity="success" sx={{ mb: 3 }}>
           <Typography variant="body2">
             ✅ Your registration is complete. Hall ticket will be available for
             download once room allocation is done.
           </Typography>
-        </Alert>
+        </Alert> */}
 
         {/* Registration Number Warning - Red Alert */}
         {showRegNumberWarning && (
@@ -336,10 +336,14 @@ const SuccessPage = () => {
                 ഡൗൺലോഡ് ചെയ്ത് പ്രിന്റ് എടുക്കണം.)
               </Typography>
 
-              <Typography variant="body2">
+              <Typography variant="body2" sx={{ mb: 1 }}>
                 • You will not be allowed to enter the exam hall without the
                 hall ticket. (ഹാൾ ടിക്കറ്റ് ഇല്ലാതെ പരീക്ഷാ ഹാളിൽ പ്രവേശിക്കാൻ
                 അനുവദിക്കില്ല.)
+              </Typography>
+
+              <Typography variant="body2">
+                • Please bring a copy of your most recent (Class 10 or 12) public examination mark list. (നിങ്ങളുടെ ഏറ്റവും പുതിയ (10 അല്ലെങ്കിൽ 12 ക്ലാസുകളിലെ) പൊതുപരീക്ഷാ മാർക്ക് ലിസ്റ്റിന്റെ പകർപ്പ് നിർബന്ധമായും കൂടെ കരുതേണ്ടതാണ്.)
               </Typography>
             </Box>
           </Alert>
@@ -500,6 +504,28 @@ const SuccessPage = () => {
                             </Typography>
                           </Grid>
                         )}
+
+                        {studentDetails.dob && (
+                          <Grid item xs={12} sm={6}>
+                            <Typography variant="body2" color="textSecondary">
+                              Date of Birth
+                            </Typography>
+                            <Typography variant="body1">
+                              {new Date(studentDetails.dob).toLocaleDateString('en-IN')}
+                            </Typography>
+                          </Grid>
+                        )}
+
+                        {studentDetails.lastPublicExamRegNo && (
+                          <Grid item xs={12} sm={6}>
+                            <Typography variant="body2" color="textSecondary">
+                              Last Public Exam Reg No
+                            </Typography>
+                            <Typography variant="body1">
+                              {studentDetails.lastPublicExamRegNo}
+                            </Typography>
+                          </Grid>
+                        )}
                       </Grid>
                     </>
                   )
@@ -591,6 +617,7 @@ const SuccessPage = () => {
               <li>Use your registration Number to check your status anytime</li>
               <li>Your room and seat are allocated</li>
               <li>Bring original Aadhaar card and hall ticket to exam</li>
+              <li>Bring a copy of your most recent public exam mark list (Class 10 or 12)</li>
               <li>Report 30 minutes before exam time</li>
               <li>Hall ticket link is included in WhatsApp share</li>
             </ul>

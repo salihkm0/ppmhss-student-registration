@@ -26,6 +26,7 @@ import {
   Download as DownloadIcon,
   AccountBalance as AccountBalanceIcon,
   Email as EmailIcon,
+  CalendarToday as CalendarIcon,
 } from "@mui/icons-material";
 import axiosInstance from "../api/axiosInstance";
 import toast from "react-hot-toast";
@@ -81,14 +82,14 @@ const StudentLookup = () => {
 
   const handlePreviewHallTicket = () => {
     window.open(
-      `https://apinmea.oxiumev.com/api/students/${student.registrationCode}/hallticket/preview`,
+      `https://nmea.ppmhsskottukkara.com/api/students/${student.registrationCode}/hallticket/preview`,
       "_blank",
     );
   };
 
   const handleDownloadHallTicket = () => {
     window.open(
-      `https://apinmea.oxiumev.com/api/students/${student.registrationCode}/hallticket/download`,
+      `https://nmea.ppmhsskottukkara.com/api/students/${student.registrationCode}/hallticket/download`,
       "_blank",
     );
   };
@@ -265,6 +266,34 @@ const StudentLookup = () => {
                       Medium
                     </Typography>
                     <Typography variant="body1">{student.medium}</Typography>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                    <CalendarIcon sx={{ mr: 1, color: "action.active" }} />
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">
+                        Date of Birth
+                      </Typography>
+                      <Typography variant="body1">
+                        {student.dob ? new Date(student.dob).toLocaleDateString('en-IN') : 'N/A'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                    <AssignmentIcon sx={{ mr: 1, color: "action.active" }} />
+                    <Box>
+                      <Typography variant="body2" color="textSecondary">
+                        Last Public Exam Reg No
+                      </Typography>
+                      <Typography variant="body1">
+                        {student.lastPublicExamRegNo || 'Not applicable'}
+                      </Typography>
+                    </Box>
                   </Box>
                 </Grid>
 

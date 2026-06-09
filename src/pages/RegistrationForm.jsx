@@ -242,6 +242,7 @@ const RegistrationForm = () => {
 
   const renderStepContent = (step) => {
     const gender = watch("gender");
+    const selectedClass = watch("studyingClass");
 
     switch (step) {
       case 0:
@@ -270,7 +271,7 @@ const RegistrationForm = () => {
                 <Box component="span" sx={{ fontWeight: 700, color: "#FFD700", mx: 0.5 }}>
                   A+ Grade in ALL subjects
                 </Box>
-                in their most recent public examination.
+                in their most recent (2026) public examination.
               </Typography>
 
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
@@ -422,6 +423,24 @@ const RegistrationForm = () => {
                     <FormHelperText>{errors.gender.message}</FormHelperText>
                   )}
                 </FormControl>
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Date of Birth *"
+                  type="date"
+                  {...register("dob", {
+                    required: "Date of birth is required",
+                  })}
+                  error={!!errors.dob}
+                  helperText={errors.dob?.message}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                  variant="outlined"
+                  size="small"
+                />
               </Grid>
 
               <Grid item xs={12}>
@@ -599,6 +618,27 @@ const RegistrationForm = () => {
                     <FormHelperText>{errors.medium.message}</FormHelperText>
                   )}
                 </FormControl>
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label={selectedClass === "12" ? "Class 12th Public Exam Reg No *" : "Class 10th Public Exam Reg No *"}
+                  {...register("lastPublicExamRegNo", {
+                    required: selectedClass === "10" ? "Class 10th Registration number is required" : "Class 12th Registration number is required",
+                  })}
+                  error={!!errors.lastPublicExamRegNo}
+                  helperText={errors.lastPublicExamRegNo?.message}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <AssignmentIcon fontSize="small" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  variant="outlined"
+                  size="small"
+                />
               </Grid>
             </Grid>
           </Box>

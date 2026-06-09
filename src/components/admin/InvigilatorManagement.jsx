@@ -93,7 +93,7 @@ import axiosInstance from "../../api/axiosInstance";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = "https://apinmea.oxiumev.com/api";
+const API_URL = "https://nmea.ppmhsskottukkara.com/api";
 
 const InvigilatorManagement = () => {
   const navigate = useNavigate();
