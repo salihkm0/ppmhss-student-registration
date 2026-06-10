@@ -568,7 +568,7 @@ const RegistrationForm = () => {
                 <FormControl fullWidth error={!!errors.studyingClass}>
                   <TextField
                     select
-                    label="Class Studying *"
+                    label="Category *"
                     {...register("studyingClass", {
                       required: "Class is required",
                     })}
@@ -584,8 +584,8 @@ const RegistrationForm = () => {
                     // value="7"
                     // disabled
                   >
-                    <MenuItem value="10">Class 10</MenuItem>
-                    <MenuItem value="12">Class +2 (12th)</MenuItem>
+                    <MenuItem value="10">Junior (Class 10 Pass-out)</MenuItem>
+                    <MenuItem value="12">Senior (Class 12 Pass-out)</MenuItem>
                   </TextField>
                   {errors.studyingClass && (
                     <FormHelperText>

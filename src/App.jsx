@@ -12,6 +12,10 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import ResultLookup from './pages/ResultLookup.jsx'; // New result page
 import HallTicketPage from './pages/HallTicketPage.jsx';
 import NotFoundPage from './components/NotFoundPage.jsx';
+import CountdownPage from './pages/CountdownPage.jsx';
+
+// Registration opens: 12 June 2026 09:00 AM IST
+const REGISTRATION_OPEN = new Date("2026-06-12T09:00:00+05:30");
 
 const theme = createTheme({
   palette: {
@@ -67,7 +71,14 @@ function App() {
       <Router>
         <Routes>
           {/* Public Routes */}
-          <Route path="/" element={<RegistrationForm />} />
+          <Route
+            path="/"
+            element={
+              Date.now() < REGISTRATION_OPEN
+                ? <CountdownPage />
+                : <RegistrationForm />
+            }
+          />
           <Route path="/success" element={<SuccessPage />} />
           <Route path="/lookup" element={<StudentLookup />} />
           <Route path="/results" element={<ResultLookup />} />
