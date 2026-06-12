@@ -73,6 +73,7 @@ const RegistrationForm = () => {
     trigger,
     watch,
     reset,
+    setValue,
   } = useForm({
     defaultValues: {
       name: "",
@@ -128,9 +129,17 @@ const RegistrationForm = () => {
     }
   };
 
+  const currentStudyingClass = watch("studyingClass");
+
   useEffect(() => {
     fetchNextApplicationNo();
   }, []);
+
+  useEffect(() => {
+    if (currentStudyingClass === "12") {
+      setValue("medium", "English", { shouldValidate: true });
+    }
+  }, [currentStudyingClass, setValue]);
 
   const handleNext = async () => {
     let fields = [];
@@ -612,7 +621,9 @@ const RegistrationForm = () => {
                     }}
                   >
                     <MenuItem value="English">English</MenuItem>
-                    <MenuItem value="Malayalam">Malayalam</MenuItem>
+                    {selectedClass !== "12" && (
+                      <MenuItem value="Malayalam">Malayalam</MenuItem>
+                    )}
                   </TextField>
                   {errors.medium && (
                     <FormHelperText>{errors.medium.message}</FormHelperText>
