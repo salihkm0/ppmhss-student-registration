@@ -230,31 +230,29 @@ const StudentManagement = () => {
     }
   };
 
-  const handleExport = async () => {
+  const handleExport = () => {
     try {
-      const response = await axiosInstance.get(
-        "/admin/export",
-        {
-          params,
-          responseType: "blob",
-        },
-      );
+      const token = localStorage.getItem("adminToken");
+      const apiBase = import.meta.env.VITE_API_URL || 'https://nmea.ppmhsskottukkara.com/api';
+      
+      const queryParams = new URLSearchParams({
+        preview: "false",
+        print: "true",
+        token: token
+      });
 
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      const filename = showDeleted
-        ? `students_with_deleted_${format(new Date(), "yyyy-MM-dd")}.csv`
-        : `students_${format(new Date(), "yyyy-MM-dd")}.csv`;
-      link.setAttribute("download", filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      if (search) queryParams.append("search", search);
+      if (classFilter) queryParams.append("class", classFilter);
+      if (roomFilter) queryParams.append("room", roomFilter);
+      if (showDeleted) queryParams.append("showDeleted", "true");
 
-      toast.success("Data exported successfully");
+      const url = `${apiBase}/admin/export?${queryParams.toString()}`;
+      
+      window.open(url, "_blank");
+      toast.success("Opening export document for printing");
     } catch (error) {
       console.error("Export error:", error);
-      toast.error("Failed to export data");
+      toast.error("Failed to open export document");
     }
   };
 
