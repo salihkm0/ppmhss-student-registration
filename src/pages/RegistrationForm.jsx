@@ -28,7 +28,6 @@ import {
   FormControlLabel,
   Alert,
   Chip,
-  Paper,
 } from "@mui/material";
 import {
   Person as PersonIcon,
@@ -54,7 +53,6 @@ import {
   EmojiEvents as EmojiEventsIcon,
   Star as StarIcon,
   Verified as VerifiedIcon,
-  EventBusy as EventBusyIcon,
 } from "@mui/icons-material";
 
 const RegistrationForm = () => {
@@ -1066,58 +1064,129 @@ const RegistrationForm = () => {
         </CardContent>
       </Card>
 
-      {/* Registration Closed Message */}
+      {/* Main Form */}
       <Card sx={{ borderRadius: 2, border: 1, borderColor: "divider", mb: 3 }}>
-        <CardContent sx={{ p: { xs: 2, sm: 4 } }}>
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 2, sm: 4 },
-              bgcolor: "grey.50",
-              borderRadius: 2,
-              textAlign: "center",
-            }}
-          >
-            <EventBusyIcon sx={{ fontSize: 80, mb: 2, color: "error.main" }} />
-            
-            <Alert 
-              severity="info" 
-              sx={{ 
-                mb: 3, 
-                justifyContent: "center",
-                '& .MuiAlert-message': {
-                  fontSize: '1.1rem',
-                  fontWeight: 500
-                }
+        <CardContent sx={{ p: 2 }}>
+          {/* Step Indicator */}
+          <Box sx={{ mb: 3 }}>
+            <Box
+              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+            >
+              {steps.map((step, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    flex: 1,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: "50%",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      mb: 1,
+                      bgcolor:
+                        index <= activeStep
+                          ? "primary.main"
+                          : "action.disabledBackground",
+                      color: index <= activeStep ? "white" : "action.disabled",
+                      fontSize: "0.875rem",
+                    }}
+                  >
+                    {index < activeStep ? (
+                      <CheckCircleIcon fontSize="small" />
+                    ) : (
+                      React.cloneElement(step.icon, { fontSize: "small" })
+                    )}
+                  </Box>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      fontWeight: index === activeStep ? 600 : 400,
+                      color:
+                        index === activeStep
+                          ? "text.primary"
+                          : "text.secondary",
+                      fontSize: "0.75rem",
+                    }}
+                  >
+                    {step.title}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+            <Box
+              sx={{
+                height: 2,
+                bgcolor: "divider",
+                position: "relative",
               }}
             >
-              Registration period has ended
-            </Alert>
-            
-            <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, color: "text.primary" }}>
-              Registration Closed
-            </Typography>
-            
-            <Typography variant="body1" sx={{ mb: 3, color: "text.secondary", maxWidth: 500, mx: "auto" }}>
-              Thank you for your interest in NMEA TENDER SCHOLAR 26. 
-              The registration window is now closed.
-            </Typography>
+              <Box
+                sx={{
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  height: "100%",
+                  width: `${(activeStep / (steps.length - 1)) * 100}%`,
+                  bgcolor: "primary.main",
+                  transition: "width 0.3s ease",
+                }}
+              />
+            </Box>
+          </Box>
 
-            <Divider sx={{ my: 3 }} />
+          {/* Form Content */}
+          <Box sx={{ mb: 3 }}>{renderStepContent(activeStep)}</Box>
 
-            <Box sx={{ maxWidth: 400, mx: "auto" }}>
+          {/* Navigation Buttons */}
+          <Box
+            sx={{ display: "flex", justifyContent: "space-between", gap: 1 }}
+          >
+            <Button
+              variant="outlined"
+              onClick={handleBack}
+              disabled={activeStep === 0 || loading}
+              startIcon={<ArrowBackIcon />}
+              size="small"
+              sx={{ minWidth: 100 }}
+            >
+              Back
+            </Button>
+
+            {activeStep === steps.length - 1 ? (
               <Button
                 variant="contained"
-                fullWidth
-                size="large"
-                startIcon={<AssignmentIcon />}
-                onClick={() => navigate("/lookup")}
-                sx={{ mb: 2, py: 1.5 }}
+                onClick={handleSubmit(onSubmit)}
+                disabled={loading}
+                endIcon={
+                  loading ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : null
+                }
+                size="small"
+                sx={{ minWidth: 150 }}
               >
-                Check Registration / Download Hall Ticket
+                {loading ? "Submitting..." : "Submit Registration"}
               </Button>
-            </Box>
-          </Paper>
+            ) : (
+              <Button
+                variant="contained"
+                onClick={handleNext}
+                endIcon={<ArrowForwardIcon />}
+                size="small"
+                sx={{ minWidth: 100 }}
+              >
+                Next
+              </Button>
+            )}
+          </Box>
         </CardContent>
       </Card>
 
