@@ -93,6 +93,10 @@ const ResultsManagement = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedClass, setSelectedClass] = useState("10");
 
+  const [editRankDialog, setEditRankDialog] = useState(false);
+  const [editRankValue, setEditRankValue] = useState("");
+  const [savingRank, setSavingRank] = useState(false);
+
   useEffect(() => {
     fetchTopPerformers();
     fetchResultStats();
@@ -250,6 +254,41 @@ const ResultsManagement = () => {
       toast.error(error.response?.data?.error || "Failed to update marks");
     } finally {
       setSavingMarks(false);
+    }
+  };
+
+  const handleEditRank = (student) => {
+    setSelectedStudent(student);
+    setEditRankValue(student.rank?.toString() || "");
+    setEditRankDialog(true);
+  };
+
+  const handleSaveEditedRank = async () => {
+    if (!selectedStudent) return;
+
+    const rank = parseInt(editRankValue);
+    if (isNaN(rank) || rank <= 0) {
+      toast.error("Please enter a valid positive rank");
+      return;
+    }
+
+    setSavingRank(true);
+    try {
+      const response = await axiosInstance.put(
+        `/admin/results/students/${selectedStudent._id}/rank`,
+        { rank }
+      );
+
+      if (response.data.success) {
+        toast.success("Rank updated successfully");
+        setEditRankDialog(false);
+        setRefreshTrigger(prev => prev + 1);
+      }
+    } catch (error) {
+      console.error("Error updating rank:", error);
+      toast.error(error.response?.data?.error || "Failed to update rank");
+    } finally {
+      setSavingRank(false);
     }
   };
 
@@ -582,6 +621,7 @@ const ResultsManagement = () => {
                   <TableCell width="150">Percentage</TableCell>
                   <TableCell width="120">Room/Seat</TableCell>
                   <TableCell width="100">Status</TableCell>
+                  <TableCell width="80" align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -661,6 +701,17 @@ const ResultsManagement = () => {
                       </TableCell>
                       <TableCell>
                         {getStatusChip(student.markEntryStatus)}
+                      </TableCell>
+                      <TableCell align="center">
+                        <Tooltip title="Edit Rank Manually">
+                          <IconButton
+                            color="primary"
+                            onClick={() => handleEditRank(student)}
+                            size="small"
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
                       </TableCell>
                     </TableRow>
                   ))
@@ -1174,6 +1225,50 @@ const ResultsManagement = () => {
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)} variant="contained">
             Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Rank Dialog */}
+      <Dialog
+        open={editRankDialog}
+        onClose={() => setEditRankDialog(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Manually Edit Rank</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mb: 2, mt: 1 }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Editing rank for:
+            </Typography>
+            <Typography variant="body1" fontWeight={600}>
+              {selectedStudent?.name} ({selectedStudent?.registrationCode})
+            </Typography>
+          </Box>
+          <TextField
+            fullWidth
+            label="Rank"
+            type="number"
+            value={editRankValue}
+            onChange={(e) => setEditRankValue(e.target.value)}
+            inputProps={{ min: 1 }}
+            autoFocus
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditRankDialog(false)}>Cancel</Button>
+          <Button
+            onClick={handleSaveEditedRank}
+            variant="contained"
+            color="primary"
+            disabled={savingRank}
+            startIcon={
+              savingRank ? <CircularProgress size={20} /> : <SaveIcon />
+            }
+          >
+            {savingRank ? "Saving..." : "Save Rank"}
           </Button>
         </DialogActions>
       </Dialog>

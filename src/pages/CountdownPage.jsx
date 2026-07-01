@@ -4,11 +4,8 @@ import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import SchoolIcon from "@mui/icons-material/School";
 
-// Registration opens: 12 June 2026 09:00 AM IST (UTC+5:30)
-const REGISTRATION_OPEN = new Date("2026-06-12T09:00:00+05:30");
-
-function getTimeLeft() {
-  const diff = REGISTRATION_OPEN - Date.now();
+function getTimeLeft(target) {
+  const diff = target - Date.now();
   if (diff <= 0) return null;
   return {
     days: Math.floor(diff / (1000 * 60 * 60 * 24)),
@@ -79,13 +76,13 @@ function DigitCard({ value, label }) {
   );
 }
 
-export default function CountdownPage() {
-  const [timeLeft, setTimeLeft] = useState(getTimeLeft());
+export default function CountdownPage({ targetDate, title, description, dateText }) {
+  const [timeLeft, setTimeLeft] = useState(getTimeLeft(targetDate));
 
   useEffect(() => {
-    const id = setInterval(() => setTimeLeft(getTimeLeft()), 1000);
+    const id = setInterval(() => setTimeLeft(getTimeLeft(targetDate)), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [targetDate]);
 
   if (!timeLeft) return null;
 
@@ -141,7 +138,7 @@ export default function CountdownPage() {
               px: 1,
             }}
           >
-            Registration Opening Soon
+            {title}
           </Typography>
           <Typography
             sx={{
@@ -153,7 +150,7 @@ export default function CountdownPage() {
               mx: "auto",
             }}
           >
-            Scholarship registration for eligible students begins shortly. Stay tuned!
+            {description}
           </Typography>
         </Box>
 
@@ -175,10 +172,10 @@ export default function CountdownPage() {
           >
             <CalendarMonthIcon sx={{ color: "#69f0ae", fontSize: { xs: 16, sm: 20 } }} />
             <Typography sx={{ color: "rgba(255,255,255,0.8)", fontWeight: 500, fontSize: { xs: "0.78rem", sm: "0.88rem" } }}>
-              Opens on
+              Available on
             </Typography>
             <Typography sx={{ color: "#69f0ae", fontWeight: 800, fontSize: { xs: "0.82rem", sm: "0.92rem" }, letterSpacing: "0.02em" }}>
-              12 June 2026 · 9:00 AM IST
+              {dateText}
             </Typography>
           </Box>
         </Box>

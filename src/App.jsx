@@ -10,12 +10,16 @@ import InvigilatorDashboard from './pages/invigilator/InvigilatorDashboard.jsx';
 import StudentLookup from './pages/StudentLookup.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import ResultLookup from './pages/ResultLookup.jsx'; // New result page
+import ResultPublishingSite from './pages/ResultPublishingSite.jsx';
 import HallTicketPage from './pages/HallTicketPage.jsx';
 import NotFoundPage from './components/NotFoundPage.jsx';
 import CountdownPage from './pages/CountdownPage.jsx';
 
 // Registration opens: 12 June 2026 09:00 AM IST
 const REGISTRATION_OPEN = new Date("2026-06-12T09:00:00+05:30");
+
+// Result publish date: 04 July 2026 02:00 PM IST
+const RESULT_PUBLISH_DATE = new Date("2026-07-04T14:00:00+05:30");
 
 const theme = createTheme({
   palette: {
@@ -74,9 +78,14 @@ function App() {
           <Route
             path="/"
             element={
-              Date.now() < REGISTRATION_OPEN
-                ? <CountdownPage />
-                : <RegistrationForm />
+              Date.now() < RESULT_PUBLISH_DATE
+                ? <CountdownPage 
+                    targetDate={RESULT_PUBLISH_DATE}
+                    title="Results Publishing Soon"
+                    description="Scholarship exam results will be published shortly. Stay tuned!"
+                    dateText="4 July 2026 · 2:00 PM IST"
+                  />
+                : <ResultPublishingSite />
             }
           />
           <Route path="/success" element={<SuccessPage />} />
