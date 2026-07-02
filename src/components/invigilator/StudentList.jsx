@@ -95,7 +95,7 @@ const StudentList = ({ dashboardData }) => {
 
   const getMarksStatus = (marks) => {
     if (marks > 0) {
-      return <Chip label={`${marks}/100`} color="success" size="small" />;
+      return <Chip label={`${marks}/50`} color="success" size="small" />;
     }
     return <Chip label="Pending" color="warning" size="small" />;
   };

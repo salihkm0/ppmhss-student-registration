@@ -231,8 +231,8 @@ const ResultsManagement = () => {
     if (!selectedStudent) return;
 
     const marks = parseInt(editMarksValue);
-    if (isNaN(marks) || marks < 0 || marks > 100) {
-      toast.error("Please enter valid marks between 0-100");
+    if (isNaN(marks) || marks < 0 || marks > 50) {
+      toast.error("Please enter valid marks between 0-50");
       return;
     }
 
@@ -1034,11 +1034,11 @@ const ResultsManagement = () => {
           </Alert>
           <TextField
             fullWidth
-            label="Enter Marks (0-100)"
+            label="Enter Marks (0-50)"
             type="number"
             value={editMarksValue}
             onChange={(e) => setEditMarksValue(e.target.value)}
-            inputProps={{ min: 0, max: 100 }}
+            inputProps={{ min: 0, max: 50 }}
             autoFocus
           />
         </DialogContent>

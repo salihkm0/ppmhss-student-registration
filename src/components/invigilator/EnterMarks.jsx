@@ -136,7 +136,7 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
   // Handle mark input change
   const handleMarkChange = (studentId, value) => {
     const numValue = parseInt(value);
-    if ((!isNaN(numValue) && numValue >= 0 && numValue <= 100) || value === '') {
+    if ((!isNaN(numValue) && numValue >= 0 && numValue <= 50) || value === '') {
       const newMarks = { ...marks, [studentId]: value };
       setMarks(newMarks);
       
@@ -238,8 +238,8 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
     }
 
     const mark = parseInt(markValue);
-    if (isNaN(mark) || mark < 0 || mark > 100) {
-      toast.error("Please enter valid marks between 0-100");
+    if (isNaN(mark) || mark < 0 || mark > 50) {
+      toast.error("Please enter valid marks between 0-50");
       return;
     }
 
@@ -491,7 +491,7 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
       const [registrationCode, markStr] = line.split(',').map(item => item.trim());
       const mark = parseInt(markStr);
       
-      if (registrationCode && !isNaN(mark) && mark >= 0 && mark <= 100) {
+      if (registrationCode && !isNaN(mark) && mark >= 0 && mark <= 50) {
         marksData.push({ registrationCode, marks: mark });
       }
     }
@@ -707,7 +707,7 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
               <TableCell>Student</TableCell>
               <TableCell>Registration Code</TableCell>
               <TableCell>Current Marks</TableCell>
-              <TableCell>Enter Marks (0-100)</TableCell>
+              <TableCell>Enter Marks (0-50)</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
@@ -784,10 +784,11 @@ const EnterMarks = ({ dashboardData, onDataUpdate }) => {
                             }}
                             inputProps={{ 
                               min: 0, 
-                              max: 100,
-                              style: { textAlign: 'center' },
-                              placeholder: "0-100"
+                              max: 50,
+                              step: 1,
+                              style: { textAlign: 'center' }
                             }}
+                            placeholder="0-50"
                             sx={{ width: 90 }}
                             disabled={savingStudentId === student._id}
                           />
